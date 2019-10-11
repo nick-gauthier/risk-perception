@@ -11,6 +11,44 @@ library(tidyverse)
 library(zoo)
 ```
 
+
+
+
+```{r}
+test <- tibble(agent = 1:5,
+       alpha = 1.5, #runif(5),
+       beta = 1.5) %>%
+  mutate(mu = alpha / (alpha + beta))
+
+test2 <- c((runif(25) < .2),(runif(25) < .5), runif(25) < .1)
+tibble(time = 1:75,
+       drought = test2) %>%
+  mutate(period = round(time, -1)) %>%
+  add_count(period) %>%
+  filter(period >= 10) %>%
+  group_by(period) %>%
+  summarise(drought = sum(drought)) %>%
+  ggplot(aes(period, drought)) +
+  geom_col()
+```
+
+```{r}
+learn <- function(agents, event) {
+  agents %>%
+    mutate(alpha = event + alpha,
+           beta = beta + 1 - event,
+           mu = alpha / (alpha + beta),
+           estimate = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
+}
+
+accumulate(test2, ~learn(.x, .y), .init = test) %>% bind_rows(.id = 'time') %>% qplot(as.numeric(time), estimate, data = ., geom = 'point')
+```
+
+```{r}
+learn(test, TRUE)
+```
+
+
 The basic risk assessment agorithm. Let's look at the risk of a drought year being 0.2. In a wet year you get 3 wheat and 2 barley, and in a dry year you get 0 wheat and 1 barley. What does that look like?
 
 ```{r}
@@ -95,23 +133,6 @@ accumulate(1:10, ~reallocate(.x), .init = .4) %>% plot
 # so this works as long as you're between 0 and 1
 ```
 
-What about memory of risk?
-```{r}
-test <- runif(7) < .5
-
-
-remember <- function(x, y) {
-  x +  * .1 - .01 * x
-}
-
-1
-
-(1-1 )/1
-
-remember
-accumulate(test, ~remember(.x, .y)) %>% plot
-
-```
 
 ```{r}
 
@@ -157,33 +178,6 @@ posterior(.5, 3, 1, 1) %>% plot
 ```
 
 
-```{r}
-test <- tibble(agent = 1:5,
-       alpha = 1.5, #runif(5),
-       beta = 1.5) %>%
-  mutate(mu = alpha / (alpha + beta))
-
-test2 <- runif(50) < .2
-
-a <- Y + (n*m) -1
-b <- N - Y + (n*(1-m)) - 1
-a = n * m
-b = n * (1 - m)
-
-.5 * 3
-
-learn <- function(x, event) {
-  x %>%
-    mutate(alpha = event + alpha,
-           beta = beta + 1 - event,
-           mu = alpha / (alpha + beta),
-           estimate = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
-}
-learn(test, TRUE)
-
-accumulate(test2, ~learn(.x, .y), .init = test) %>% bind_rows %>% pull(estimate) %>% plot
-```
-
 so now we get the same yields, but the proportions are different
 ```{r}
 (1 *  0.625 - 2 * .375) * .375 * .625
@@ -206,21 +200,27 @@ yield_max_wheat <- 3500
 kcal_barley <- 3000
 kcal_wheat <- 3540
 
-calc_wheat_yield <- function(rainfall) {
-  yield_max_wheat * kcal_wheat * pmax(0, 0.51 * log(rainfall) + 1.03)  # annual rainfall impact on yields
-}
-
-calc_barley_yield <- function(rainfall) {
-  yield_max_barley * kcal_barley * pmax(0, 0.48 * log(rainfall) + 1.51)  # annual rainfall impact on yields
+calc_yield <- function(rainfall, crop = 'wheat') {
+  if (crop == 'wheat') {
+    yield <- yield_max_wheat * kcal_wheat * pmax(0, 0.51 * log(rainfall) + 1.03)  # annual rainfall impact on yields
+  }
+  
+  if(crop == 'barley') {
+    yield <- yield_max_barley * kcal_barley * pmax(0, 0.48 * log(rainfall) + 1.51) 
+  }
+  
+  return(yield)
 }
 
 
 tibble(rainfall = (0:200) / 100,
-       barley = calc_barley_yield(rainfall),
-       wheat = calc_wheat_yield(rainfall)) %>%
+       barley = calc_yield(rainfall, 'barley'),
+       wheat = calc_yield(rainfall, 'wheat')) %>%
   gather(crop, yield, barley:wheat) %>%
-  ggplot(aes(rainfall, yield, color = crop)) + geom_line()
-
+  ggplot(aes(rainfall, yield, color = crop)) + 
+  geom_line() +
+  geom_hline(yintercept = yield_max_wheat * kcal_wheat) +
+  geom_hline(yintercept = yield_max_barley * kcal_barley)
 ```
 
 
