@@ -1,0 +1,314 @@
+---
+title: "risk-perception"
+author: "Nick Gauthier"
+date: "9/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(zoo)
+```
+
+The basic risk assessment agorithm. Let's look at the risk of a drought year being 0.2. In a wet year you get 3 wheat and 2 barley, and in a dry year you get 0 wheat and 1 barley. What does that look like?
+
+```{r}
+wheat_dry <- 0
+wheat_wet <- 1.6
+barley_dry <- 0.93
+barley_wet <- 1.18
+
+calc_yield <- function(wheat_prop, risk) {
+  barley <- (1 - wheat_prop) * (barley_dry * risk + barley_wet * (1 - risk))
+  wheat <- wheat_prop * (wheat_dry * risk + wheat_wet * (1 - risk))
+  barley + wheat
+}
+
+
+util_wet <- wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)
+util_dry <- wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)
+
+util_wet * (1 - risk)
+
+calc_yield(.92, .5)
+
+calc_ratio <- function(risk) {
+  (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1))
+}
+calc_ratio(.2)
+
+calc_yield(1, .2)
+
+plot(calc_yield((0:10)/10, .2))
+
+expand_grid(wheat_prop = (0:10)/10,
+       risk = (0:10)/10) %>%
+  mutate(util_wet = (1 - risk) * (wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)),
+         util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop))) %>%
+  gather(type, util, util_wet:util_dry) %>%
+  ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+
+
+expand_grid(wheat_prop = (0:10)/1,
+       risk = (0:10)/10) %>%
+  mutate(util_wet = (1 - risk) * (wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)),
+         util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop))) %>%
+  gather(type, util, util_wet:util_dry) %>%
+  ggplot(aes(risk, util, color = type)) + geom_line() + facet_wrap(~wheat_prop)
+
+
+calc_prop <- function(risk) {
+  pb <- barley_wet * (1 - risk) - barley_dry * risk
+  pw <- wheat_wet * (1 - risk) - wheat_dry * risk
+
+  pb / (pb + pw) 
+}
+
+plot(calc_prop((0:10)/10))
+```
+
+
+```{r}
+calcNE <- function(risk){
+  (118 - 25 * risk) / (278 - 185 * risk)
+}
+
+
+(barley_wet - .2 * (barley_dry + wheat_dry + wheat_wet + barley_wet)) / (barley_wet + wheat_wet)
+
+calcNE(1)
+
+
+plot(1.6 * (1:10)/10 + 1.18 * (10:1)/10)
+```
+
+
+so we're imagining a yield of 1 for barley and 2 for wheat, with equal prportions of each. then in the next time step we'd revise the proportion to take away .25
+```{r}
+reallocate <- function(wheat_prop, risk) {
+  wheat_prop + 1 * (1.18 * (1 - wheat_prop) - 1.6 * wheat_prop) * wheat_prop * (1 - wheat_prop)
+}
+
+accumulate(1:10, ~reallocate(.x), .init = .4) %>% plot
+
+# so this works as long as you're between 0 and 1
+```
+
+What about memory of risk?
+```{r}
+test <- runif(7) < .5
+
+
+remember <- function(x, y) {
+  x +  * .1 - .01 * x
+}
+
+1
+
+(1-1 )/1
+
+remember
+accumulate(test, ~remember(.x, .y)) %>% plot
+
+```
+
+```{r}
+
+prior <- function(m,n){
+a = n * m
+b = n * (1 - m)
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+prior(.5, 2) %>% plot
+```
+
+```{r}
+likelihood <- function(N,Y){
+a <- Y + 1
+b <- N - Y + 1
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+likelihood(1, 1)%>% plot
+```
+
+```{r}
+posterior <- function(m,n,N,Y){
+a <- Y + (n*m) -1
+b <- N - Y + (n*(1-m)) - 1
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+
+-1
+1 - 0 - 1
+
+dbeta(seq(0,1,0.005), -1, 0)
+prior(.5, 2) %>% plot
+posterior(.5, 3, 1, 1) %>% plot
+```
+
+
+```{r}
+test <- tibble(agent = 1:5,
+       alpha = 1.5, #runif(5),
+       beta = 1.5) %>%
+  mutate(mu = alpha / (alpha + beta))
+
+test2 <- runif(50) < .2
+
+a <- Y + (n*m) -1
+b <- N - Y + (n*(1-m)) - 1
+a = n * m
+b = n * (1 - m)
+
+.5 * 3
+
+learn <- function(x, event) {
+  x %>%
+    mutate(alpha = event + alpha,
+           beta = beta + 1 - event,
+           mu = alpha / (alpha + beta),
+           estimate = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
+}
+learn(test, TRUE)
+
+accumulate(test2, ~learn(.x, .y), .init = test) %>% bind_rows %>% pull(estimate) %>% plot
+```
+
+so now we get the same yields, but the proportions are different
+```{r}
+(1 *  0.625 - 2 * .375) * .375 * .625
+```
+
+```{r}
+1- .375
+```
+
+
+```{r}
+-1 * 0.0625 * (1 - 0.0625)
+```
+
+
+
+```{r}
+yield_max_barley <- 2500
+yield_max_wheat <- 3500
+kcal_barley <- 3000
+kcal_wheat <- 3540
+
+calc_wheat_yield <- function(rainfall) {
+  yield_max_wheat * kcal_wheat * pmax(0, 0.51 * log(rainfall) + 1.03)  # annual rainfall impact on yields
+}
+
+calc_barley_yield <- function(rainfall) {
+  yield_max_barley * kcal_barley * pmax(0, 0.48 * log(rainfall) + 1.51)  # annual rainfall impact on yields
+}
+
+
+tibble(rainfall = (0:200) / 100,
+       barley = calc_barley_yield(rainfall),
+       wheat = calc_wheat_yield(rainfall)) %>%
+  gather(crop, yield, barley:wheat) %>%
+  ggplot(aes(rainfall, yield, color = crop)) + geom_line()
+
+```
+
+
+```{r}
+# generate some forgetting curves
+forgetting_curves <- tibble(x = c(.01, .1, 1, 0)) %>%
+  mutate(memory = map(x, ~exp(-1 * . *1:50))) %>%
+  unnest(cols= c(memory)) %>%
+  group_by(x) %>%
+  mutate(time = 1:n())
+
+ggplot(forgetting_curves, aes(time, memory)) +
+  geom_line(aes(color = as.factor(x)), size = 1.2) +
+  labs(title = 'Forgetting curves', x = 'Years', y = 'Relative memory strength\n') +
+  scale_color_viridis_d(name = 'Decay rate') +
+  theme_classic()
+```
+
+```{r}
+farm <- function(households){
+  households %>%
+    mutate(yield = climatic_yield, #* n_inhabitants ^ labor_elasticity,
+           yield_memory = yield, #map2(yield_memory, yield, remember),
+           harvest = land * yield * .5 - land * sowing_rate) #%>%  # *.5 is for fallow
+  #select(-yield)
+}
+
+
+remember <- function(yield_memory, yield){
+  # rnorm(1, yield, yield * 0.0333) %>%  #memory is fuzzy
+  append(yield_memory[-length(yield_memory)], yield, after = 0) # remove the last entry in the vector and add new yield to the begining
+}
+
+
+#Agents use the peak-end rule when accessing memory.
+peak_end <- function(x){
+  map_dbl(x, ~mean(c(.x[1], min(.x))))
+}
+
+```
+
+
+
+
+```{r}
+obs.na <- read.csv('salihli_p.csv')[10:620, 5]  / 10  # raw data in mm*10. subset time series as water years (i.e. first observation is october, last is september)
+
+get.winter <- function(x){seq(0, length(x) - 12, 12) %>%
+    sapply(function(y) y + 1:6) %>%
+    as.numeric %>% extract(x, .)}# function to get Oct-Mar values from
+obs<- obs.na %>% 
+  rev %>% 
+  na.locf %>% 
+  rev %>% 
+  `+`(na.locf(obs.na)) %>% 
+  `/`(2) %>%  # fill NA with avg of adjacent values
+  get.winter
+
+# Now import TraCE-21k GCM data. Extract a time series for the grid cell covering the Salihli weather station. Add the model-output convective and large-scale precipitation variables to get total precipitation. Convert from m/s to mm/month. Subset time series to the calibration period (10 BP - AD 1940) and prediction period (10000 BP - 11 BP).
+
+salihli.pt <- c(28.14, 38.48) %>% matrix(nrow = 1) %>% SpatialPoints  # create a point in Salihli to extract data from GCM
+
+pc <- list.files('GCM Data/PRECC', full.names = T) %>%  # get a list of all GCM output files
+  lapply(brick) %>%                                 # import GCM files as raster bricks
+  lapply(., raster::extract,salihli.pt) %>%                  # extract series from the grid cell containing Salihli
+  unlist                                            # combine into a single vector
+
+pl <- list.files('GCM Data/PRECL', full.names = T) %>%  # get a list of all GCM output files
+  lapply(brick) %>%                                 # import GCM files as raster bricks
+  lapply(., raster::extract,salihli.pt) %>%                  # extract series from the grid cell containing Salihli
+  unlist                                            # combine into a single vector
+
+pt <- pc %>% add(pl) %>% multiply_by(60 * 60 * 24 * 30 * 1000)  # add precip components and convert from m/s to mm/month
+
+cal <- pt %>% extract(122278:122877) %>% get.winter
+
+pred <- pt %>% extract(2398:122397) %>% get.winter
+
+pred.byfifty <- pred %>% seq_along %>% divide_by(300) %>% ceiling %>% split(pred,.)
+
+calc.cdf <- function(x){
+  pred <- x
+  ct <- CDFt(obs, cal, pred)
+  ct$DS
+}
+monthly.recon <- lapply(pred.byfifty, calc.cdf) %>% unlist
+annual.recon <- monthly.recon %>% seq_along %>% divide_by(6) %>% ceiling %>% split(monthly.recon,.) %>%
+  lapply(sum) %>% unlist %>% data.frame(date = seq(-10000,-1,1), p = ., color = cut(., c(0,200,300, 800)))
+
+```
+
