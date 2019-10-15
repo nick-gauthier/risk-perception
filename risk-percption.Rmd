@@ -57,44 +57,51 @@ wheat_wet <- 1.6
 barley_dry <- 0.93
 barley_wet <- 1.18
 
-calc_yield <- function(wheat_prop, risk) {
+calc_payoff <- function(wheat_prop, risk) {
   barley <- (1 - wheat_prop) * (barley_dry * risk + barley_wet * (1 - risk))
   wheat <- wheat_prop * (wheat_dry * risk + wheat_wet * (1 - risk))
   barley + wheat
 }
 
 
-util_wet <- wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)
-util_dry <- wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)
+tibble(wheat_prop)
+```
 
-util_wet * (1 - risk)
-
-calc_yield(.92, .5)
+```{r}
 
 calc_ratio <- function(risk) {
   (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1))
 }
 calc_ratio(.2)
+```
 
-calc_yield(1, .2)
-
-plot(calc_yield((0:10)/10, .2))
-
-expand_grid(wheat_prop = (0:10)/10,
-       risk = (0:10)/10) %>%
+So at between 3 in 10 and 4 in 10 risk of drought, a maximizer will switchfrom wheat to barley.
+```{r}
+test_dat <- expand_grid(wheat_prop = (0:10)/10,
+       risk = seq(0, 1, 0.2)) %>%
   mutate(util_wet = (1 - risk) * (wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)),
-         util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop))) %>%
-  gather(type, util, util_wet:util_dry) %>%
-  ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+         util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)),
+         util_wheat = wheat_prop * (wheat_wet * (1 - risk) + wheat_dry *  risk),
+         util_barley = (1 - wheat_prop) * (barley_wet* (1 - risk)+ barley_dry * risk),
+         payoff = calc_payoff(wheat_prop, risk))
 
 
-expand_grid(wheat_prop = (0:10)/1,
-       risk = (0:10)/10) %>%
-  mutate(util_wet = (1 - risk) * (wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)),
-         util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop))) %>%
-  gather(type, util, util_wet:util_dry) %>%
-  ggplot(aes(risk, util, color = type)) + geom_line() + facet_wrap(~wheat_prop)
+test_dat %>%
+  group_by(risk) %>%
+  filter(payoff == max(payoff)) %>%
+  ggplot(aes(risk, wheat_prop)) + geom_point()
 
+test_dat %>%
+  select(-(util_dry:util_wet)) %>%
+  gather(type, util, util_wheat:util_barley) %>%
+    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+test_dat %>%
+  select(-(util_wheat:util_barley)) %>%
+  gather(type, util, util_dry:util_wet) %>%
+    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+
+test_dat %>%
+  ggplot(aes(wheat_prop, util_wet + util_dry)) + geom_point() + facet_wrap(~risk)
 
 calc_prop <- function(risk) {
   pb <- barley_wet * (1 - risk) - barley_dry * risk
@@ -119,6 +126,13 @@ calcNE(1)
 
 
 plot(1.6 * (1:10)/10 + 1.18 * (10:1)/10)
+
+util_wet <- wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)
+util_dry <- wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)
+
+tibble()
+
+
 ```
 
 
@@ -220,7 +234,22 @@ tibble(rainfall = (0:200) / 100,
   ggplot(aes(rainfall, yield, color = crop)) + 
   geom_line() +
   geom_hline(yintercept = yield_max_wheat * kcal_wheat) +
-  geom_hline(yintercept = yield_max_barley * kcal_barley)
+  geom_hline(yintercept = yield_max_barley * kcal_barley) +
+  geom_hline(yintercept = 1016525* 5, color ='red') +
+  geom_vline(xintercept = 0.3)
+```
+
+How do we define the "drought year" cutoff? Below 300mm there isn't enough wheat growing in a hectare to feed a family of 5, which seems appropriate.
+```{r}
+test <- tibble(time = 1:100,
+       rain = rnorm(100, mean = 1, sd = 1) %>% pmax(0),
+       yield = calc_yield(rain))
+
+ggplot(test, aes(time, yield)) + geom_point() + geom_hline(yintercept = 1016525)
+
+test %>%
+  mutate(drought = if_else(yield < 5e+6, TRUE, FALSE))%>%
+  filter(drought == TRUE)
 ```
 
 
