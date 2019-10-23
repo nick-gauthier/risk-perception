@@ -8,17 +8,133 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(zoo)
+library(lpSolve)
+
+#library(zoo)
+```
+
+Start with a population of agents with the same subjective beliefs about drought risk.
+
+```{r}
+agents <- tibble(id = 1:5, 
+                 alpha = 1.5,
+                 beta = 1.5,
+                 risk = alpha / (alpha + beta))
+```
+
+```{r}
+agents
+```
+
+
+And payoffs for different crop types in different years.
+```{r}
+wheat_dry <- 0
+wheat_wet <- 1.6
+barley_dry <- 0.93
+barley_wet <- 1.18
+
+wheat_dry <- .2
+wheat_wet <- .4
+barley_dry <- 0.6
+barley_wet <- .3
+```
+
+The expected yield is thus calculated as.
+```{r}
+expected_utility <- function(risk) {
+  risk * (wheat_dry + barley_dry) + (1 - risk) * (wheat_wet + barley_wet) 
+}
+```
+
+```{r}
+expected_utility(0.2) # assuming a drought risk of 0.2
+```
+
+Given these payoffs, what's the point of indifference between the two crop types?
+
+```{r, echo = FALSE}
+plt_dat <- tibble(risk = seq(0, 1, .1),
+       barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
+      wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
+  gather(type, utility, barley_exp:wheat_exp)
+```
+
+The pure maximin strategy is to plant barley:
+```{r}
+max(wheat_dry, barley_dry)
+```
+
+
+```{r, echo = FALSE}
+indiff <- tibble(risk = (barley_wet - wheat_wet) / (wheat_dry - wheat_wet - barley_dry + barley_wet),
+                 utility = risk * wheat_dry + (1 - risk) * wheat_wet)
+
+plt_dat %>%
+  ggplot(aes(risk, utility)) +
+  geom_hline(yintercept = indiff$utility, linetype = 2)+
+  geom_vline(xintercept = indiff$risk, linetype = 2) +
+  geom_line(aes(color = type), size = 1.2) +
+  geom_point(data = indiff, color = 'black', size = 3) +
+  geom_text(data = indiff, label = '(0.3, 1.1)', nudge_x = 0.1, nudge_y = 0.1) +
+  theme_classic()
+```
+
+The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two
+
+```{r, echo = FALSE}
+plt_dat2 <- tibble(wheat_prop = seq(0, 1, .1),
+       dry_exp = wheat_prop * wheat_dry + (1 - wheat_prop) * barley_dry,
+      wet_exp = wheat_prop * wheat_wet + (1 - wheat_prop) * barley_wet) %>%
+  gather(type, utility, dry_exp:wet_exp)
+```
+
+So the intersection point of the next plot is the mixed strategy equilbrium(indifference point) in a risk-free environment
+
+```{r, echo = FALSE}
+nash_eq <- tibble(wheat_prop = abs(barley_dry - barley_wet) / (abs(barley_dry - barley_wet) + abs(wheat_dry - wheat_wet)),
+                  utility = wheat_prop * (wheat_dry + wheat_wet))
+
+plt_dat2 %>%
+  ggplot(aes(wheat_prop, utility)) +
+  geom_hline(yintercept = nash_eq$utility, linetype = 2)+
+  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
+  geom_line(aes(color = type), size = 1.2) +
+  geom_point(data = nash_eq, color = 'black', size = 3) +
+  geom_text(data = nash_eq, 
+            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
+            nudge_x = 0.1, nudge_y = 0.05) +
+  theme_classic()
+
+```
+
+
+when you sample from the expected value, use that to choose a strategy. but if you sample lots, use that to create a mixed streateg
+
+And the subjective expected yields for the agents are thus.
+```{r}
+agents %>%
+  mutate(risk = runif(n())) %>%
+  mutate(yield_exp = expected_utility(risk),
+         barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
+         wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet,
+         favorite = case_when(barley_exp == wheat_exp ~ 'either',
+                              barley_exp > wheat_exp ~ 'barley',
+                              barley_exp < wheat_exp ~ 'wheat')) 
+```
+
+
+```{r}
+calc_ratio <- function(risk) {
+  pmax(0, (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1)))
+}
 ```
 
 
 
-
+Now create a population of agents with different subjective beliefs about the drought risk.
 ```{r}
-test <- tibble(agent = 1:5,
-       alpha = 1.5, #runif(5),
-       beta = 1.5) %>%
-  mutate(mu = alpha / (alpha + beta))
+
 
 test2 <- c((runif(25) < .2),(runif(25) < .5), runif(25) < .1)
 tibble(time = 1:75,
@@ -31,6 +147,7 @@ tibble(time = 1:75,
   ggplot(aes(period, drought)) +
   geom_col()
 ```
+
 
 
 
@@ -53,28 +170,22 @@ learn(test, TRUE)
 ```
 
 
-The basic risk assessment agorithm. Let's look at the risk of a drought year being 0.2. In a wet year you get 3 wheat and 2 barley, and in a dry year you get 0 wheat and 1 barley. What does that look like?
+The basic risk assessment algorithm. Let's look at the risk of a drought year being 0.2. In a wet year you get 3 wheat and 2 barley, and in a dry year you get 0 wheat and 1 barley. What does that look like?
 
-```{r}
-wheat_dry <- 0
-wheat_wet <- 1.6
-barley_dry <- 0.93
-barley_wet <- 1.18
-```
 
+
+maximax
 ```{r}
-library(lpSolve) #Loading lpSolve library
-risk <- 0.6
+risk <- 0.9
 wheat_exp <- wheat_wet * (1 - risk) + wheat_dry * risk
 barley_exp <- barley_wet * (1 - risk) + barley_dry * risk
 obj.fun <- c(wheat_exp, barley_exp)
 
-constr=matrix(c(1,1,1,0,0,1,wheat_exp,barley_exp),ncol = 2, byrow = TRUE) #Loading the constraints
-constr.dir=c("=",">=",">=",">=")
-constr.rhs=c(1,0,0,1)
+constr=matrix(c(1,1,1,0,0,1, wheat_exp, barley_exp),ncol = 2, byrow = TRUE) #Loading the constraints
+constr.dir=c("=",">=",">=", ">=")
+constr.rhs=c(1,0,0, .5)
 
-mod=lp("max",obj.fun,constr,constr.dir,constr.rhs,compute.sens = TRUE) #Using lp() to solve our problem
-
+mod=lp("min",obj.fun,constr,constr.dir,constr.rhs) #Using lp() to solve our problem
 mod$solution
 ```
 
@@ -110,50 +221,35 @@ accumulate((runif(25) < .2), ~calc_payoff(.x, drought = .y) %>% update_prop(aspi
   theme_minimal()
 ```
 
-```{r}
-calc_ratio <- function(risk) {
-  (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1))
-}
-calc_ratio(.2)
-```
 
 So at between 3 in 10 and 4 in 10 risk of drought, a maximizer will switchfrom wheat to barley.
 
-```{r}
-tibble(wheat_prop = (0:10)/10,
-       risk = 0.5,
-       util_wet = wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop),
-      util_dry = wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop),
-      util_expected = util_wet * (1 - risk) + util_dry * risk,
-      min_yield = pmin(util_wet, util_dry)) %>%
-    ggplot(aes(util_expected, min_yield)) + geom_line() +
-  geom_hline(yintercept = .6, linetype = 2)
-```
-
-```{r}
-tibble(wheat_prop = (0:10)/10,
-       risk = 0.5,
-       util_wet = wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop),
-      util_dry = wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop),
-      util_expected = util_wet * (1 - risk) + util_dry * risk) %>%
-    gather(type, util, util_wet:util_expected) %>%
-    ggplot(aes(wheat_prop, util, color = type)) + geom_line()
-```
 
 ```{r}
 test_dat <- expand_grid(wheat_prop = (0:10)/10,
-       risk = seq(0, 1, 0.2)) %>%
+       risk = seq(0, 1, 0.1)) %>%
   mutate(util_wet = (1 - risk) * (wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)),
          util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)),
          util_wheat = wheat_prop * (wheat_wet * (1 - risk) + wheat_dry *  risk),
-         util_barley = (1 - wheat_prop) * (barley_wet* (1 - risk)+ barley_dry * risk),
-         payoff = calc_payoff(wheat_prop, risk))
+         util_barley = (1 - wheat_prop) * (barley_wet* (1 - risk) + barley_dry * risk),
+         util_payoff = util_dry + util_wet)
+```
 
+```{r}
 test_dat %>%
   select(-(util_wheat:util_barley)) %>%
-  gather(type, util, c(util_dry, util_wet, payoff)) %>%
-    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+  gather(type, util, c(util_dry, util_wet, util_payoff)) %>%
+    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk) + geom_hline(yintercept = .5, alpha = .3, linetype = 2) + geom_vline(xintercept = .14, alpha = 0.3,linetype = 2)
+```
+```{r}
+test_dat %>%
+  select(-(util_wheat:util_barley)) %>%
+  mutate(util_min = pmin(util_wet, util_dry))%>%
+    ggplot(aes(util_payoff, util_min)) + geom_line() + facet_wrap(~risk) + geom_hline(yintercept = .3, alpha = .3, linetype = 2)
+```
 
+
+```{r}
 test_dat %>%
   group_by(risk) %>%
   filter(payoff == max(payoff)) %>%
@@ -162,7 +258,7 @@ test_dat %>%
 test_dat %>%
   select(-(util_dry:util_wet)) %>%
   gather(type, util, util_wheat:util_barley) %>%
-    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk) + geom_vline(xintercept = .14)
   
 
 
