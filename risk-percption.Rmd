@@ -32,6 +32,10 @@ tibble(time = 1:75,
   geom_col()
 ```
 
+
+
+
+
 ```{r}
 learn <- function(agents, event) {
   agents %>%
@@ -56,19 +60,57 @@ wheat_dry <- 0
 wheat_wet <- 1.6
 barley_dry <- 0.93
 barley_wet <- 1.18
-
-calc_payoff <- function(wheat_prop, risk) {
-  barley <- (1 - wheat_prop) * (barley_dry * risk + barley_wet * (1 - risk))
-  wheat <- wheat_prop * (wheat_dry * risk + wheat_wet * (1 - risk))
-  barley + wheat
-}
-
-
-tibble(wheat_prop)
 ```
 
 ```{r}
+library(lpSolve) #Loading lpSolve library
+risk <- 0.6
+wheat_exp <- wheat_wet * (1 - risk) + wheat_dry * risk
+barley_exp <- barley_wet * (1 - risk) + barley_dry * risk
+obj.fun <- c(wheat_exp, barley_exp)
 
+constr=matrix(c(1,1,1,0,0,1,wheat_exp,barley_exp),ncol = 2, byrow = TRUE) #Loading the constraints
+constr.dir=c("=",">=",">=",">=")
+constr.rhs=c(1,0,0,1)
+
+mod=lp("max",obj.fun,constr,constr.dir,constr.rhs,compute.sens = TRUE) #Using lp() to solve our problem
+
+mod$solution
+```
+
+```{r}
+calc_payoff <- function(x, drought) {
+  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
+  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
+  
+  x %>%
+    mutate(yield = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop))
+}
+
+update_prop <- function(x, aspiration) {
+  x %>%
+    mutate(new_prop = round(runif(n()), 2),
+           wheat_prop = if_else(yield > aspiration, wheat_prop, new_prop)) %>%
+    select(-new_prop)
+}
+
+test3 <- tibble(agent = 1:1000) %>%
+  mutate(wheat_prop = round(runif(n()), 2)) %>%
+  calc_payoff(drought = TRUE)
+test3 %>% update_prop(aspiration = .6)
+
+accumulate((runif(25) < .3), ~calc_payoff(.x, drought = .y) %>% update_prop(aspiration = .5), .init = test3) %>% bind_rows(.id = 'time') %>% ggplot(aes(as.numeric(time), yield, group = agent)) + geom_line(alpha = .2)
+
+```
+
+```{r}
+library(ggridges)
+accumulate((runif(25) < .2), ~calc_payoff(.x, drought = .y) %>% update_prop(aspiration = .6), .init = test3) %>% bind_rows(.id = 'time') %>% ggplot(aes(wheat_prop, y = as.numeric(time), group = as.numeric(time))) +
+  geom_density_ridges() +
+  theme_minimal()
+```
+
+```{r}
 calc_ratio <- function(risk) {
   (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1))
 }
@@ -76,6 +118,28 @@ calc_ratio(.2)
 ```
 
 So at between 3 in 10 and 4 in 10 risk of drought, a maximizer will switchfrom wheat to barley.
+
+```{r}
+tibble(wheat_prop = (0:10)/10,
+       risk = 0.5,
+       util_wet = wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop),
+      util_dry = wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop),
+      util_expected = util_wet * (1 - risk) + util_dry * risk,
+      min_yield = pmin(util_wet, util_dry)) %>%
+    ggplot(aes(util_expected, min_yield)) + geom_line() +
+  geom_hline(yintercept = .6, linetype = 2)
+```
+
+```{r}
+tibble(wheat_prop = (0:10)/10,
+       risk = 0.5,
+       util_wet = wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop),
+      util_dry = wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop),
+      util_expected = util_wet * (1 - risk) + util_dry * risk) %>%
+    gather(type, util, util_wet:util_expected) %>%
+    ggplot(aes(wheat_prop, util, color = type)) + geom_line()
+```
+
 ```{r}
 test_dat <- expand_grid(wheat_prop = (0:10)/10,
        risk = seq(0, 1, 0.2)) %>%
@@ -85,6 +149,10 @@ test_dat <- expand_grid(wheat_prop = (0:10)/10,
          util_barley = (1 - wheat_prop) * (barley_wet* (1 - risk)+ barley_dry * risk),
          payoff = calc_payoff(wheat_prop, risk))
 
+test_dat %>%
+  select(-(util_wheat:util_barley)) %>%
+  gather(type, util, c(util_dry, util_wet, payoff)) %>%
+    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
 
 test_dat %>%
   group_by(risk) %>%
@@ -95,10 +163,8 @@ test_dat %>%
   select(-(util_dry:util_wet)) %>%
   gather(type, util, util_wheat:util_barley) %>%
     ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
-test_dat %>%
-  select(-(util_wheat:util_barley)) %>%
-  gather(type, util, util_dry:util_wet) %>%
-    ggplot(aes(wheat_prop, util, color = type)) + geom_line() + facet_wrap(~risk)
+  
+
 
 test_dat %>%
   ggplot(aes(wheat_prop, util_wet + util_dry)) + geom_point() + facet_wrap(~risk)
@@ -111,6 +177,12 @@ calc_prop <- function(risk) {
 }
 
 plot(calc_prop((0:10)/10))
+```
+
+
+
+```{r}
+tibble(x)
 ```
 
 
@@ -132,6 +204,7 @@ util_dry <- wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)
 
 tibble()
 
+plot(seq(.1,1,.1) * (1 - seq(.1,1,.1)))
 
 ```
 
