@@ -46,26 +46,21 @@ expected_utility <- function(risk) {
 expected_utility(0.2) # assuming a drought risk of 0.2
 ```
 
-Given these payoffs, what's the point of indifference between the two crop types?
-
-```{r, echo = FALSE}
-plt_dat <- tibble(risk = seq(0, 1, .1),
-       barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
-      wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
-  gather(type, utility, barley_exp:wheat_exp)
-```
-
 The pure maximin strategy is to plant barley:
 ```{r}
 max(wheat_dry, barley_dry)
 ```
 
 
+Given these payoffs, what's the point of indifference between the two crop types?
 ```{r, echo = FALSE}
 indiff <- tibble(risk = (barley_wet - wheat_wet) / (wheat_dry - wheat_wet - barley_dry + barley_wet),
                  utility = risk * wheat_dry + (1 - risk) * wheat_wet)
 
-plt_dat %>%
+tibble(risk = seq(0, 1, .1),
+       barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
+      wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
+  gather(type, utility, barley_exp:wheat_exp) %>%
   ggplot(aes(risk, utility)) +
   geom_hline(yintercept = indiff$utility, linetype = 2)+
   geom_vline(xintercept = indiff$risk, linetype = 2) +
@@ -99,7 +94,6 @@ tibble(wheat_prop = seq(0, 1, .1),
 ```{r}
 # farmer's ne
 pmax(0, round((barley_wet - barley_dry) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2))
-
 #nature's ne
 round((barley_wet - wheat_wet) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2)
 ```
@@ -108,17 +102,6 @@ round((barley_wet - wheat_wet) / (wheat_dry + barley_wet - (wheat_wet + barley_d
 
 when you sample from the expected value, use that to choose a strategy. but if you sample lots, use that to create a mixed streateg
 
-And the subjective expected yields for the agents are thus.
-```{r}
-agents %>%
-  mutate(risk = runif(n())) %>%
-  mutate(yield_exp = expected_utility(risk),
-         barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
-         wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet,
-         favorite = case_when(barley_exp == wheat_exp ~ 'either',
-                              barley_exp > wheat_exp ~ 'barley',
-                              barley_exp < wheat_exp ~ 'wheat')) 
-```
 
 ```{r}
 calc_ratio <- function(risk) {
@@ -131,17 +114,32 @@ Simulate a time series with varying drought frequency.
 droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .1)
 ```
 
-Allow the agents to learn the drought risk over time.
+Allow the agents to learn the drought risk over time. Also need to calculate the actual payoffs for each agent.
+
 ```{r}
-learn <- function(agents, event) {
+learn <- function(agents, drought) {
+  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
+  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
+  
   agents %>%
-    mutate(alpha = event + alpha,
-           beta = beta + 1 - event,
+    # farmer's turn
+      mutate(yield_exp = expected_utility(risk),
+         barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
+         wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet,
+         crop = case_when(barley_exp > wheat_exp ~ 'barley',
+                              barley_exp < wheat_exp ~ 'wheat',
+                              barley_exp == wheat_exp ~ 'either'),
+         prediction = map2(alpha, beta, ~rbeta(20, .x, .y)),
+         wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
+      select(-prediction) %>%
+  # nature's turn
+    mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
+           alpha = drought + alpha,
+           beta = beta + 1 - drought,
            mu = alpha / (alpha + beta),
            risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
 }
 ```
-
 
 Run an experiment.
 ```{r}
@@ -151,12 +149,37 @@ simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>%
   filter(time != 1)
 ```
 
-
-```{r}
+```{r, echo = TRUE}
 ggplot(simulation, aes(time, risk)) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
   theme_classic()
+```
+
+```{r, echo = TRUE}
+simulation %>%
+  group_by(time, crop) %>%
+  tally() %>%
+ggplot(aes(time, n, fill = crop)) +
+  geom_bar(width = 1, stat = 'identity') +
+  scale_fill_manual(values = c('yellow', 'orange')) +
+  theme_classic()
+```
+
+These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
+```{r}
+ggplot(simulation, aes(time, wheat_prop)) +
+  geom_point(alpha = .3) +
+  theme_classic()
+```
+
+
+```{r}
+simulation %>%
+  group_by(time) %>%
+  summarise(famine = sum(payoff == 0)) %>%
+ggplot(aes(time, famine)) +
+  geom_line()
 ```
 
 Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
@@ -183,13 +206,7 @@ mod$solution
 ```
 
 ```{r}
-calc_payoff <- function(x, drought) {
-  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
-  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
-  
-  x %>%
-    mutate(yield = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop))
-}
+
 
 update_prop <- function(x, aspiration) {
   x %>%
