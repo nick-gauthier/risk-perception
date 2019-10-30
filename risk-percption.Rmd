@@ -111,7 +111,7 @@ calc_ratio <- function(risk) {
 
 Simulate a time series with varying drought frequency.
 ```{r}
-droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .1)
+droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
 ```
 
 Allow the agents to learn the drought risk over time. Also need to calculate the actual payoffs for each agent.
@@ -129,7 +129,7 @@ learn <- function(agents, drought) {
          crop = case_when(barley_exp > wheat_exp ~ 'barley',
                               barley_exp < wheat_exp ~ 'wheat',
                               barley_exp == wheat_exp ~ 'either'),
-         prediction = map2(alpha, beta, ~rbeta(20, .x, .y)),
+         prediction = map2(alpha, beta, ~rbeta(100, .x, .y)),
          wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
       select(-prediction) %>%
   # nature's turn
@@ -162,7 +162,7 @@ simulation %>%
   tally() %>%
 ggplot(aes(time, n, fill = crop)) +
   geom_bar(width = 1, stat = 'identity') +
-  scale_fill_manual(values = c('yellow', 'orange')) +
+  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
   theme_classic()
 ```
 
@@ -179,7 +179,8 @@ simulation %>%
   group_by(time) %>%
   summarise(famine = sum(payoff == 0)) %>%
 ggplot(aes(time, famine)) +
-  geom_line()
+  geom_line() +
+  theme_classic()
 ```
 
 Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
