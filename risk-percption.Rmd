@@ -1,39 +1,123 @@
 ---
-title: "risk-perception"
+title: "Crop diversification in a game against nature"
 author: "Nick Gauthier"
-date: "9/18/2019"
+date: ""
+bibliography: refs.bib 
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
-library(lpSolve)
-
-#library(zoo)
 ```
 
-Start with a population of agents with the same subjective beliefs about drought risk.
+# Introduction
 
-```{r}
-agents <- tibble(id = 1:100, 
-                 alpha = 1.5,
-                 beta = 1.5,
-                 risk = alpha / (alpha + beta))
-```
+Over the past 10,000 years, subsistence farmers in the Mediterranean basin have developed sophisticated strategies to maintain stable food supplies given uncertain rainfall. Their suite of strategies include practices like crop diversification, storage, and exchange [@Halstead1989]). These risk-management strategies all represent forms of \emph{regulatory feedback} used to manage complex socio-ecological systems. Regulatory feedbacks convert a system's high-variance inputs into low-variance outputs by dynamically monitoring the outputs and adjusting internal properties of the system [@Anderies2015]. Risk-managing strategies require farmers to make specific resource allocation decisions in response to environmental risks, and as regulatory feedbacks they are thus sensitive to variability in both the spatiotemporal patterns of risk and the ability of farmers to perceive and act on those patterns.
 
-```{r}
-agents
-```
+Crop diversification is an excellent example of a widespread and effective regulatory feedback strategy (Figure 1). Relying on a mix of food types with different climatic tolerances is an efficient way to maintain a robust food supply [@helmers2001separating,Anderies2006]. In the Mediterranean, land-use strategies involving a diversified portfolio of wheat and barley have been employed by even the earliest sedentary farmers, and continue to be used to this day [@GOULD1963a,Slafer1999,Abbo2009a,Marston2011190]. Wheat generally has higher yields but is sensitive to water deficits, while barley is less productive but drought tolerant. Planting a mix of wheat and barley, either in the same plot or in a combination of plots, is an effective means of diversifying grain supplies. By adjusting the ratio of wheat to barley, farmers can adapt to changing drought risks.
 
+![Conceptual model of crop diversification as a regulatory feedback system. Uncertain rainfall leads to uncertain returns from land-use systems. To keep food supplies stable, farmers must monitor year-to-year variations and decide what combination of crops works best to minimize that variance.](figures/regulatory_feedback.png)
+Are these crop-diversification strategies vulnerable to the same dynamics as other social-ecological systems with similar regulatory feedbacks mechanisms? One way to address this is to model the influence of imperfect monitoring and biased decision making in uncertain environments. In this study, I accomplish this by answering two main questions:
 
-And payoffs for different crop types in different years.
+1. What was the temporal pattern of climate and climate change during the Holocene in the eastern Mediterranean?
+2. How well could crop diversification strategies cope with this pattern, given farmers’ imperfect risk perception and decision-making?
+
+I couple a climate model with high temporal resolution to a simple game theoretic model of agricultural decision making under uncertainty, in order to examine the performance of optimal and suboptimal wheat-barley diversification practices. I model the year-to-year crop diversification strategies made by farmers as an iterated game of fictitious play against nature [@GOULD1963a]. Farmers are boundedly rational, in that they seek to maximize their objective functions given the perceived probabilities of different actions by nature, but work with flawed mental models of climate-related risks due to imperfect recall of past events. Furthermore, by using a climate model to represent the actions of nature, I can more precisely capture the characteristic autocorrelated patterns of rainfall variability, rather than simply drawing rainfall values from a static distribution. This framework allows me to address the sensitivity of diversification strategies to changes and climatic variability and imperfect human perceptions of those changes.
+
+# Decision-Making in a Game Against Nature
+
+Assume two different crops, a low yield drought tolerant crop (barley) and a high yield drought susceptible crop (wheat).
+
+Estimates of yield volume (t/ha) for each crop type in wet and dry years were derived from isotopic studies of ancient wheat and barley samples from archaeological sites in the Mediterranean [@Slafer1999] (Table 1). 
+
+||Drought Year|Normal Year|
+|-------|-----|-----|----|
+|Barley Yield|0.93|1.18|
+|Wheat Yield|0|1.60|
+
+Table: Estimated yields for ancient wheat and barley varieties derived from [@Slafer1999].
+
 ```{r}
 wheat_dry <- 0
 wheat_wet <- 1.6
 barley_dry <- 0.93
 barley_wet <- 1.18
 ```
+
+Optimal wheat/barley proportions can be calculated using two different objective functions representing different decision making types of farmers. 
+
+
+## Strategies
+
+1. Wald Maximin -- pessimist, maximize the worst case scenario
+2. Savage Regret -- minimize regret
+3. Hurewicz - balance optimism and pessimism
+4. Laplace or "naive" - 50/50
+
+So both the Wald and Savage regret criteria tell us to choose barley all the time.
+
+If we're using the empirical frequency distirubtion of nature's moves, then we are playing a fictitious game. The strategy of planting the crop with the highest expected yield, given the frequency distribution of nature is known, will only work when nature is stationary.
+
+We could think of other algorithms that would minimize the cumulative or average regret of a player over many years in a situation with nonstationary rainfall, but we have to remain within cognitive limits.
+
+* Maximax
+2. Maximize *subjective* expected utility
+3. Satisficing learning -- win-stay lose-move
+4. Nash equilibrium -- minimax (risk free)
+5. Fictitious play learning rule -- use empirical frequency distribution.
+A. Good against environment when environment is stationary but not when its nonstationary.
+B. Bayesian belief based learning
+
+The pure maximin strategy is to plant barley:
+```{r}
+max(wheat_dry, barley_dry)
+```
+
+Alternatively, yield maximizing farmers simply seek to maximize the function for their expected utility given all possible states of nature
+\begin{equation}
+    E\left[ U_{all} \right] = E \left[U_{dry} \right] \times P_{dry}^{*} + E \left[U_{wet} \right] \times \left(1-P_{dry}^{*}\right).
+\end{equation}
+
+
+Given this information on the potential payoffs for planting each crop type, and information on the (perceived) probability of a drought occurring, the crop-diversification decision practice can be thought of as a simple two-player game against nature [@GOULD1963a]. The expected yields for a farmer given a fixed proportion of barley and wheat can be calculated as
+
+\begin{equation}
+    E \left[Y_{dry} \right] = W_{dry} \times  P + B_{dry} \times (1 - P)
+\end{equation}
+if a drought occurs and likewise
+\begin{equation}
+    E \left[Y_{wet} \right] = W_{wet} \times P + B_{wet} \times (1 - P)
+\end{equation}
+
+if a drought does not occur. This specification allows us to calculate the optimal proportion of wheat to barley one should plant in a diversified strategy as a mixed strategy profile.
+
+Risk minimizing farmers play the equivalent of a mixed strategy Nash equilibrium, setting the expected yields in drought and normal years equal to each other, weighted by risk, and solving for the wheat/barley proportion
+\begin{equation}
+    E \left[Y_{dry} \right] \times P_{dry}^{*} = E \left[U_{wet} \right] \times \left(1- P_{dry}^{*}\right), 
+\end{equation}
+where $P_{dry}^{*}$ is the \emph{perceived}, not realized, risk of a drought in a particular year. The solution to this function represents the ratio of wheat to barley that would make a farmer indifferent to whether a drought would occur in a given year.
+
+
+Given these payoffs, what's the point of indifference between the two crop types?
+```{r, echo = FALSE}
+indiff <- tibble(risk = (barley_wet - wheat_wet) / (wheat_dry - wheat_wet - barley_dry + barley_wet),
+                 utility = risk * wheat_dry + (1 - risk) * wheat_wet)
+
+tibble(risk = seq(0, 1, .1),
+      barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
+      wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
+  gather(type, utility, barley_exp:wheat_exp) %>%
+  ggplot(aes(risk, utility)) +
+  geom_hline(yintercept = indiff$utility, linetype = 2)+
+  geom_vline(xintercept = indiff$risk, linetype = 2) +
+  geom_line(aes(color = type), size = 1.2) +
+  geom_point(data = indiff, color = 'black', size = 3) +
+  geom_text(data = indiff, label = '(0.3, 1.1)', nudge_x = 0.1, nudge_y = 0.1) +
+  theme_classic() +
+  ggtitle('Point of indifference between wheat and barley', 'Given varying drought risk')
+```
+
 
 The expected yield is thus calculated as.
 ```{r}
@@ -46,31 +130,7 @@ expected_utility <- function(risk) {
 expected_utility(0.2) # assuming a drought risk of 0.2
 ```
 
-The pure maximin strategy is to plant barley:
-```{r}
-max(wheat_dry, barley_dry)
-```
-
-
-Given these payoffs, what's the point of indifference between the two crop types?
-```{r, echo = FALSE}
-indiff <- tibble(risk = (barley_wet - wheat_wet) / (wheat_dry - wheat_wet - barley_dry + barley_wet),
-                 utility = risk * wheat_dry + (1 - risk) * wheat_wet)
-
-tibble(risk = seq(0, 1, .1),
-       barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
-      wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
-  gather(type, utility, barley_exp:wheat_exp) %>%
-  ggplot(aes(risk, utility)) +
-  geom_hline(yintercept = indiff$utility, linetype = 2)+
-  geom_vline(xintercept = indiff$risk, linetype = 2) +
-  geom_line(aes(color = type), size = 1.2) +
-  geom_point(data = indiff, color = 'black', size = 3) +
-  geom_text(data = indiff, label = '(0.3, 1.1)', nudge_x = 0.1, nudge_y = 0.1) +
-  theme_classic()
-```
-
-The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two. So the intersection point of the next plot is the mixed strategy equilbrium(indifference point) in a risk-free environment
+The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two. So the intersection point of the next plot is the mixed strategy equilbrium (indifference point) in a risk-free environment
 
 ```{r, echo = FALSE}
 nash_eq <- tibble(wheat_prop = round((barley_wet - barley_dry) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2),
@@ -102,137 +162,6 @@ round((barley_wet - wheat_wet) / (wheat_dry + barley_wet - (wheat_wet + barley_d
 
 when you sample from the expected value, use that to choose a strategy. but if you sample lots, use that to create a mixed streateg
 
-
-```{r}
-calc_ratio <- function(risk) {
-  pmax(0, (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1)))
-}
-```
-
-Simulate a time series with varying drought frequency.
-```{r}
-droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
-```
-
-Allow the agents to learn the drought risk over time. Also need to calculate the actual payoffs for each agent.
-
-```{r}
-learn <- function(agents, drought) {
-  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
-  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
-  
-  agents %>%
-    # farmer's turn
-      mutate(yield_exp = expected_utility(risk),
-         barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
-         wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet,
-         crop = case_when(barley_exp > wheat_exp ~ 'barley',
-                              barley_exp < wheat_exp ~ 'wheat',
-                              barley_exp == wheat_exp ~ 'either'),
-         prediction = map2(alpha, beta, ~rbeta(100, .x, .y)),
-         wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
-      select(-prediction) %>%
-  # nature's turn
-    mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
-           alpha = drought + alpha,
-           beta = beta + 1 - drought,
-           mu = alpha / (alpha + beta),
-           risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
-}
-```
-
-Run an experiment.
-```{r}
-simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
-  bind_rows(.id = 'time') %>%
-  mutate(time = as.numeric(time)) %>%
-  filter(time != 1)
-```
-
-```{r, echo = TRUE}
-ggplot(simulation, aes(time, risk)) +
-  geom_point(alpha = .1) +
-  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
-  theme_classic()
-```
-
-```{r, echo = TRUE}
-simulation %>%
-  group_by(time, crop) %>%
-  tally() %>%
-ggplot(aes(time, n, fill = crop)) +
-  geom_bar(width = 1, stat = 'identity') +
-  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
-  theme_classic()
-```
-
-These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
-```{r}
-ggplot(simulation, aes(time, wheat_prop)) +
-  geom_point(alpha = .3) +
-  theme_classic()
-```
-
-
-```{r}
-simulation %>%
-  group_by(time) %>%
-  summarise(famine = sum(payoff == 0)) %>%
-ggplot(aes(time, famine)) +
-  geom_line() +
-  theme_classic()
-```
-
-Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
-
-```{r}
-knitr::knit_exit()
-```
-
-
-
-maximax
-```{r}
-risk <- 0.9
-wheat_exp <- wheat_wet * (1 - risk) + wheat_dry * risk
-barley_exp <- barley_wet * (1 - risk) + barley_dry * risk
-obj.fun <- c(wheat_exp, barley_exp)
-
-constr=matrix(c(1,1,1,0,0,1, wheat_exp, barley_exp),ncol = 2, byrow = TRUE) #Loading the constraints
-constr.dir=c("=",">=",">=", ">=")
-constr.rhs=c(1,0,0, .5)
-
-mod=lp("min",obj.fun,constr,constr.dir,constr.rhs) #Using lp() to solve our problem
-mod$solution
-```
-
-```{r}
-
-
-update_prop <- function(x, aspiration) {
-  x %>%
-    mutate(new_prop = round(runif(n()), 2),
-           wheat_prop = if_else(yield > aspiration, wheat_prop, new_prop)) %>%
-    select(-new_prop)
-}
-
-test3 <- tibble(agent = 1:1000) %>%
-  mutate(wheat_prop = round(runif(n()), 2)) %>%
-  calc_payoff(drought = TRUE)
-test3 %>% update_prop(aspiration = .6)
-
-accumulate((runif(25) < .3), ~calc_payoff(.x, drought = .y) %>% update_prop(aspiration = .5), .init = test3) %>% bind_rows(.id = 'time') %>% ggplot(aes(as.numeric(time), yield, group = agent)) + geom_line(alpha = .2)
-
-```
-
-```{r}
-library(ggridges)
-accumulate((runif(25) < .2), ~calc_payoff(.x, drought = .y) %>% update_prop(aspiration = .6), .init = test3) %>% bind_rows(.id = 'time') %>% ggplot(aes(wheat_prop, y = as.numeric(time), group = as.numeric(time))) +
-  geom_density_ridges() +
-  theme_minimal()
-```
-
-
 So at between 3 in 10 and 4 in 10 risk of drought, a maximizer will switchfrom wheat to barley.
 
 
@@ -261,7 +190,8 @@ test_dat %>%
   geom_hline(data = nash_eq2, aes(yintercept = utility), alpha = .3, linetype = 2) + 
   geom_vline(data = nash_eq2, aes(xintercept = wheat_prop), alpha = 0.3,linetype = 2) +
   geom_point(data = nash_eq2) +
-  theme_classic()
+  theme_minimal()
+# hmmm, on second thought this might not make any sense, what's actually informative here is tha maximum value, which is the same as saying whether it is above or below the indifference threshold. but beyond that the idea of the nash equilibrium at different risk levels doesn't make sense, becuase then the nash equilibrium is, under the hood, adding another risk assessment to nature's moves.
 ```
 
 
@@ -272,10 +202,11 @@ test_dat %>%
   ggplot(aes(wheat_prop, util, color = type)) + 
   geom_line() + 
   facet_wrap(~risk) + 
-  geom_vline(xintercept = nash_eq$wheat_prop)
+ # geom_vline(xintercept = nash_eq$wheat_prop) +
+  theme_minimal()
 ```
 
-Here we see that the mixed strategy that maximizes expected utility is always a pure strategy.
+*Here we see that the mixed strategy that maximizes expected utility is always a pure strategy.*
 ```{r}
 test_dat %>%
   gather(type, utility, payoff_exp:payoff_max) %>%
@@ -284,11 +215,343 @@ test_dat %>%
   facet_wrap(~risk)
 ```
 
-So both the Wald and Savage regret criteria tell us to choose barley all the time.
 
-If we're using the empirical frequency distirubtion of nature's moves, then we are playing a fictitious game. The strategy of planting the crop with the highest expected yield, given the frequency distribution of nature is known, will only work when nature is stationary.
+```{r}
+calc_ratio <- function(risk) {
+  pmax(0, (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1)))
+}
 
-We could think of other algorithms that would minimize the cumulative or average regret of a player over many years in a situation with nonstationary rainfall, but we have to remain within cognitive limits.
+
+tibble(risk = seq(0, 1, .01),
+       ratio = calc_ratio(risk)) %>%
+  ggplot(aes(risk, ratio)) +
+  geom_line() + 
+  theme_classic()
+```
+
+
+## Crop Allocation Decisions
+
+
+These equations are iteratively applied to the entire span of the climate-model output. The result is that farmers calculate the optimal land-use strategy that, \emph{to the best of their knowledge and given their preferences}, uses information from the past.
+
+
+# Climate Risks and Risk Perception
+
+Using the bias-corrected climate model output, I divided each model year into dry years and wet years. A dry year was any year where less than 300mm of rain fell during the wet season (October-March), the threshold below which wheat crops will generally fail [@Wilkinson1997], and a wet/normal year was defined as any year above this threshold. 
+
+Given the modeled patterns of wet and dry years, drought risk for any particular year was defined as the proportion of the previous 50 years that were dry years
+
+\begin{equation}
+    P_{dry} = \frac{\sum_{n=t-1}^{t-50} precip_n < 300}{50},
+\end{equation} 
+where $t$ is the current time step. The 50 year time span was selected to approximate the accumulated observational knowledge of an individual farmer and their immediate household. As a result, this approach does not allow for accumulated social learning, although it could easily be extended to do so in future studies.
+
+
+Start with a population of agents with the same subjective beliefs about drought risk.
+
+```{r}
+agents <- tibble(id = 1:100, 
+                 alpha = 1.5,
+                 beta = 1.5,
+                 risk = alpha / (alpha + beta))
+```
+
+
+```{r}
+agents
+```
+
+Allow the agents to learn the drought risk over time. Also need to calculate the actual payoffs for each agent.
+
+```{r}
+learn <- function(agents, drought) {
+  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
+  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
+  
+  agents %>%
+    # farmer's turn to decide what to plant
+      mutate(yield_exp = expected_utility(risk),
+         barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
+         wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet,
+         crop = case_when(barley_exp > wheat_exp ~ 'barley',
+                              barley_exp < wheat_exp ~ 'wheat',
+                              barley_exp == wheat_exp ~ 'either'),
+         prediction = map2(alpha, beta, ~rbeta(100, .x, .y)), # sample 100 as if agent is thinking in percentages
+         wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
+      select(-prediction) %>%
+  # nature's turn to decide realized yields
+    mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
+           alpha = drought + alpha,
+           beta = beta + 1 - drought,
+           mu = alpha / (alpha + beta),
+           risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
+}
+```
+
+Similar to above, but satisficing
+```{r}
+learn_satisficing <- function(agents, drought, aspiration) {
+  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
+  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
+  
+  agents %>%
+     mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
+            new_prop = round(runif(n()), 2),
+           wheat_prop = if_else(payoff > aspiration, wheat_prop, new_prop)) %>%
+    select(-new_prop)
+}
+```
+
+
+## Bayesian Updating
+
+```{r}
+prior <- function(m,n){
+a = n * m
+b = n * (1 - m)
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+tibble(year = 1:20,
+       risk = .5) %>%
+  mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
+  unnest(cols = c(belief)) %>%
+  ggplot(aes(x, y)) +
+  geom_line() +
+  facet_wrap( ~year) +
+  theme_bw() +
+  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
+
+#prior(.5, ) %>% plot
+```
+
+```{r}
+likelihood <- function(N,Y){
+a <- Y + 1
+b <- N - Y + 1
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+#likelihood(1, 1)%>% plot
+```
+
+```{r}
+posterior <- function(m,n,N,Y){
+a <- Y + (n*m) -1
+b <- N - Y + (n*(1-m)) - 1
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+#dbeta(seq(0,1,0.005), -1, 0)
+#prior(.5, 2) %>% plot
+#posterior(.5, 3, 1, 1) %>% plot
+```
+
+
+## Climate Modeling and Bias Correction
+
+Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research's Earth System Grid repository (https://www.earthsystemgrid.org). TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to orbital parameters and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present (Figure 2) [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of climate forcings (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
+
+![Example model precipitation outputs from the TraCE-21k simulation at 9.5ka BP.](figures/trace_white.png)
+
+
+The computational complexity of the TraCE-21k simulation requires it to be run at a coarse (~200km) spatial resolution. At this resolution, key hydroclimate processes such as individual cloud formation cannot be simulated directly, leading to biases in the distribution of modeled precipitation. In order to reveal climate patterns at regional scales, outputs from this simulation must be statistically downscaled and bias corrected. The cumulative distribution function transform (CDF-t) method is a skillful yet conceptually simple technique to downscale and bias-corrected GCM data [@Michelangeli2009]. The technique works directly with the CDFs of observed and simulated climate variables, rather than individual observations. A function is first derived that transforms the CDF of GCM data to match the CDF of weather-station observations from the same period. The same function is then used to transform the CDFs of GCM data from different time periods, accounting for the changes in the CDFs from one simulation period to another (Figure 3). CDF-t is nonparametric, and thus more data-driven than weather generators and related statistical downscaling methods that rely to a greater degree on external assumptions about the nature of the data.
+
+![CDFs for simulated and observed precipitation in the present day, and simulated and bias-corrected precipitation in the past.](figures/cdf.png)
+
+TraCE-21k simulation outputs for the past 10,000 years were bias-corrected using the CDF-t method and observed precipitation from a weather station in near the town of Salihli in western Turkey. This location was selected due to its long (~70yr) observational record, the representativeness of western Anatolian climate for the greater eastern Mediterranean, and its proximity to archaeological sites with comparative evidence of crop diversification strategies.
+
+
+\section{Results and Discussion}
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=16cm]{precon.png}
+\caption{Bias-corrected wet season (October-March) precipitation accumulations from the past 10,000 years of TraCE-21k simulation. 1 point = 1 year, color corresponds to whether that year falls bellow the thresholds for wheat or barley crop failure.}
+\end{figure}
+
+The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
+
+The risk of crop failure due to drought in any given year varies between 10\% and 20\%, punctuated by one to four century-long events where risk drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high drought risk cluster around known periods of regional and global climate deterioration, such as at 8.6ka BP and 4.2ka BP.
+
+![Annual risk of wheat crop failure due to drought, averaged by century.](figures/wheatrisk.png)
+
+
+Given the average drought risks estimated from TraCE-21k and assuming perfect monitoring and recall of recent droughts (i.e. $\lambda = 0$), farmers intent on minimizing the risk of crop failure would be expected to plant about 65\% barley to 35\% wheat on average. This proportion is within the range estimated from macrobotanical remains at a nearby archaeological site [@Marston2011190]. Yield maximizing farmers instead play a pure strategy profile, planting wheat if the perceived drought risk is less than 0.68 and barley if it is more. Because the GCM-simulated drought risk never rises above this threshold, a yield-maximizing farmer will always plant a wheat monocrop.
+
+
+Examining the long-term dynamics of crop yields among all decision-making strategies and psychological profiles reveals variability in yields due to different decision making preferences is far greater variability due to differences in risk perception (Figure 7). Risk-minimizing strategies sacrifice productivity for predictability, consistently lowering the mean and variance of crop yields over time. Risk-minimizing strategies are more sensitive to risk perception than yield-maximizing strategies; varying the memory decay rate parameter $\lambda$ had no effect on the optimal crop allocation for yield maximizers. 
+
+During periods of climatic stability, allowing past experiences to influence decision making helps farmers minimize the impacts of \emph{predictable} drought. But past experiences are less informative during periods of rapid climate change, and even farmers who manage risk “optimally” experience major food shortfalls. Climatically-induced variability in food supplies consistently surpasses that from differences in risk-perception psychology, but not that from different risk aversion preferences. This finding suggests that the efficacy of risk managing strategies that rely on regulatory feedbacks is limited to periods of relative climatic stability. This is consistent with the observation from the Roman Period Mediterranean that while minor food crises were common in the ancient world, extreme famines were rare [@Garnsey1989].
+
+Statistically downscaling palaeoclimate simulations and coupling them to game theoretic models of decision making under uncertainty is a simple way to better understand the patterning of climate changes and the regulatory feedbacks farmers use to adapt to them. To further explore these patterns, future work should incorporate additional risk-minimizing strategies such as storage and exchange. Food storage and exchange can also be thought of as forms of diversification, the former in the time and the latter in space [@Marston2011190]. Food exchange would be of particular interest from a game theoretic perspective, as incomplete information with respect to an exchange partner's crop diversification and storage practices can lead to situations of moral hazard.
+
+Run an experiment. Simulate a time series with varying drought frequency.
+```{r}
+droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
+```
+
+```{r}
+simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+```
+
+
+```{r, echo = TRUE}
+ggplot(simulation, aes(time, risk)) +
+  geom_point(alpha = .1) +
+  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic()
+```
+
+```{r, echo = TRUE}
+simulation %>%
+  group_by(time, crop) %>%
+  tally() %>%
+ggplot(aes(time, n, fill = crop)) +
+  geom_bar(width = 1, stat = 'identity') +
+  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
+  theme_classic()
+```
+
+These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
+```{r}
+ggplot(simulation, aes(time, wheat_prop)) +
+  geom_point(alpha = .3) +
+  theme_classic()
+```
+
+
+```{r}
+test3 <- tibble(agent = 1:100) %>%
+  mutate(wheat_prop = round(runif(n()), 2))
+
+simulation2 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .8), .init = test3) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+  
+simulation2 %>% ggplot(aes(as.numeric(time), payoff, group = agent)) + geom_point(alpha = .2)
+simulation2 %>% ggplot(aes(as.numeric(time), wheat_prop, group = agent)) + geom_point(alpha = .2)
+```
+
+```{r}
+simulation %>%
+  group_by(time) %>%
+  summarise(famine = sum(payoff == 0)) %>%
+ggplot(aes(time, famine)) +
+  geom_line() +
+  theme_classic()
+```
+
+Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
+
+
+# References
+
+```{r}
+knitr::knit_exit()
+```
+
+Now incorporate realistic drought variability from simulations.
+
+```{r}
+library(raster)
+library(CDFt)
+```
+
+```{r}
+konya <- matrix(c(32.5, 37.9), nrow = 1)
+
+
+sim_present <- brick('~/Downloads/b40.20th.track1.1deg.005.cam2.h0.PRECT.185001-200512.nc') %>%
+  raster::extract(konya, df = TRUE) %>%
+  dplyr::select(-ID) %>%
+  gather(time, rainfall) %>%
+  mutate(rainfall = rainfall * 2.628e+9,
+         year = rep(1850:2005, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
+         month = rep(1:12, times = 156)) %>%
+  dplyr::select(-time) %>%
+  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
+  filter(between(water_year, 1932, 2005)) %>%
+  group_by(water_year) %>%
+  summarise(precip = sum(rainfall))
+
+sim_past <- brick('~/Downloads/b40.mh6ka.1deg.003.cam2.h0.PRECT.080101-131612.nc') %>% 
+  raster::extract(konya, df = TRUE) %>%
+  dplyr::select(-ID) %>%
+  gather(time, rainfall) %>%
+  mutate(rainfall = rainfall * 2.628e+9,
+         year = rep(1:516, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
+         month = rep(1:12, times = 516)) %>%
+   dplyr::select(-time) %>%
+  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
+  group_by(water_year) %>%
+  summarise(precip = sum(rainfall))
+```
+
+```{r}
+obs <- read_table('~/Downloads/pa17244.dat', 
+           comment = "#", 
+           col_names = c('year', 1:12), 
+           na = c('-999.9', '-888.8')) %>%
+  gather(month, precip, `1`:`12`) %>%
+ # filter(!(month %in% c(4:10)) & year < 2006) %>%
+  group_by(month) %>%
+  mutate(precip = if_else(is.na(precip), mean(precip, na.rm = TRUE), precip)) %>%
+  ungroup %>%
+  mutate(month = as.numeric(month),
+         water_year = if_else(month %in% 10:12, year + 1, year)) %>% 
+    filter(between(water_year, 1932, 2005)) %>%
+  group_by(water_year) %>%
+  summarise(precip = sum(precip))
+```
+
+```{r}
+obs_past <- CDFt(obs$precip, sim_present$precip, sim_past$precip)$DS
+
+plot(obs_past)
+
+obs_past < 300
+```
+
+
+maximax
+```{r}
+risk <- 0.9
+wheat_exp <- wheat_wet * (1 - risk) + wheat_dry * risk
+barley_exp <- barley_wet * (1 - risk) + barley_dry * risk
+obj.fun <- c(wheat_exp, barley_exp)
+
+constr=matrix(c(1,1,1,0,0,1, wheat_exp, barley_exp),ncol = 2, byrow = TRUE) #Loading the constraints
+constr.dir=c("=",">=",">=", ">=")
+constr.rhs=c(1,0,0, .5)
+
+mod=lp("min",obj.fun,constr,constr.dir,constr.rhs) #Using lp() to solve our problem
+mod$solution
+```
+
+## Satisficing learners
+
+
+```{r}
+library(ggridges)
+accumulate((runif(25) < .2), ~calc_payoff(.x, drought = .y) %>% update_prop(aspiration = .6), .init = test3) %>% bind_rows(.id = 'time') %>% ggplot(aes(wheat_prop, y = as.numeric(time), group = as.numeric(time))) +
+  geom_density_ridges() +
+  theme_minimal()
+```
+
+
+
 
 ```{r}
 # this is for nature
@@ -311,65 +574,6 @@ reallocate <- function(wheat_prop, risk) {
 accumulate(1:10, ~reallocate(.x), .init = .4) %>% plot
 
 # so this works as long as you're between 0 and 1
-```
-
-
-```{r}
-
-prior <- function(m,n){
-a = n * m
-b = n * (1 - m)
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-prior(.5, 2) %>% plot
-```
-
-```{r}
-likelihood <- function(N,Y){
-a <- Y + 1
-b <- N - Y + 1
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-likelihood(1, 1)%>% plot
-```
-
-```{r}
-posterior <- function(m,n,N,Y){
-a <- Y + (n*m) -1
-b <- N - Y + (n*(1-m)) - 1
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-
--1
-1 - 0 - 1
-
-dbeta(seq(0,1,0.005), -1, 0)
-prior(.5, 2) %>% plot
-posterior(.5, 3, 1, 1) %>% plot
-```
-
-
-so now we get the same yields, but the proportions are different
-```{r}
-(1 *  0.625 - 2 * .375) * .375 * .625
-```
-
-```{r}
-1- .375
-```
-
-
-```{r}
--1 * 0.0625 * (1 - 0.0625)
 ```
 
 
@@ -401,7 +605,7 @@ tibble(rainfall = (0:200) / 100,
   geom_line() +
   geom_hline(yintercept = yield_max_wheat * kcal_wheat) +
   geom_hline(yintercept = yield_max_barley * kcal_barley) +
-  geom_hline(yintercept = 1016525* 5, color ='red') +
+  geom_hline(yintercept = 1016525 * 5, color ='red') +
   geom_vline(xintercept = 0.3)
 ```
 
@@ -418,21 +622,6 @@ test %>%
   filter(drought == TRUE)
 ```
 
-
-```{r}
-# generate some forgetting curves
-forgetting_curves <- tibble(x = c(.01, .1, 1, 0)) %>%
-  mutate(memory = map(x, ~exp(-1 * . *1:50))) %>%
-  unnest(cols= c(memory)) %>%
-  group_by(x) %>%
-  mutate(time = 1:n())
-
-ggplot(forgetting_curves, aes(time, memory)) +
-  geom_line(aes(color = as.factor(x)), size = 1.2) +
-  labs(title = 'Forgetting curves', x = 'Years', y = 'Relative memory strength\n') +
-  scale_color_viridis_d(name = 'Decay rate') +
-  theme_classic()
-```
 
 ```{r}
 farm <- function(households){
