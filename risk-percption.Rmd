@@ -8,7 +8,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(raster)
 library(tidyverse)
+library(CDFt)
 ```
 
 # Introduction
@@ -31,18 +33,26 @@ Assume two different crops, a low yield drought tolerant crop (barley) and a hig
 
 Estimates of yield volume (t/ha) for each crop type in wet and dry years were derived from isotopic studies of ancient wheat and barley samples from archaeological sites in the Mediterranean [@Slafer1999] (Table 1). 
 
-||Drought Year|Normal Year|
-|-------|-----|-----|----|
-|Barley Yield|0.93|1.18|
-|Wheat Yield|0|1.60|
+||Dry Year|Normal Year|Wet Year|
+|-------|-----|-----|----|----|
+|Barley Yield|0.93|1.18||
+|Wheat Yield|0|1.60||
 
 Table: Estimated yields for ancient wheat and barley varieties derived from [@Slafer1999].
 
 ```{r}
-wheat_dry <- 0
-wheat_wet <- 1.6
-barley_dry <- 0.93
-barley_wet <- 1.18
+#wheat_dry <- 0
+#wheat_wet <- 1.6
+#barley_dry <- 0.93
+#barley_wet <- 1.18
+
+wheat_dry <- 30
+wheat_normal <- 60
+wheat_wet <- 70
+
+barley_dry <- 50
+barley_normal <- 50
+barley_wet <- 40
 ```
 
 Optimal wheat/barley proportions can be calculated using two different objective functions representing different decision making types of farmers. 
@@ -121,14 +131,62 @@ tibble(risk = seq(0, 1, .1),
 
 The expected yield is thus calculated as.
 ```{r}
-expected_utility <- function(risk) {
-  risk * (wheat_dry + barley_dry) + (1 - risk) * (wheat_wet + barley_wet) 
+expected_yield_wheat <- function(p_dry, p_wet) {
+  p_dry * wheat_dry + p_wet * wheat_wet + (1 - p_wet - p_dry) * wheat_normal 
+}
+
+expected_yield_barley <- function(p_dry, p_wet) {
+  p_dry * barley_dry + p_wet * barley_wet + (1 - p_wet - p_dry) * barley_normal 
 }
 ```
 
 ```{r}
-expected_utility(0.2) # assuming a drought risk of 0.2
+expected_yield_wheat(p_dry = 0.3, p_wet = 0.2)
+expected_yield_barley(p_dry = 0.3, p_wet = 0.2)
 ```
+
+The risk averse MAXIMIN pure strategy is to plant barley all the time, and the risk indifferent farmer plants wheat for its high yields
+
+```{r}
+yield_var_wheat <- function(p_dry, p_wet) {
+  exp_wheat <- expected_yield_wheat(p_dry, p_wet)
+  p_dry * (wheat_dry - exp_wheat) ^ 2 +
+    p_wet * (wheat_wet - exp_wheat) ^ 2 +
+    (1 - p_dry - p_wet) * (wheat_normal - exp_wheat) ^ 2
+}
+
+yield_var_barley <- function(p_dry, p_wet) {
+  exp_barley <- expected_yield_barley(p_dry, p_wet)
+  p_dry * (barley_dry - exp_barley) ^ 2 +
+    p_wet * (barley_wet - exp_barley) ^ 2 +
+    (1 - p_dry - p_wet) * (barley_normal - exp_barley) ^ 2
+}
+
+yield_var_wheat(0.3, 0.2)
+yield_var_barley(0.3, 0.2)
+```
+
+```{r}
+yield_mad_wheat <- function(p_dry, p_wet) {
+  exp_wheat <- expected_yield_wheat(p_dry, p_wet)
+  p_dry * abs(wheat_dry - exp_wheat) +
+    p_wet * abs(wheat_wet - exp_wheat) +
+    (1 - p_dry - p_wet) * abs(wheat_normal - exp_wheat)
+  }
+
+yield_mad_barley <- function(p_dry, p_wet) {
+  exp_barley <- expected_yield_barley(p_dry, p_wet)
+  p_dry * abs(barley_dry - exp_barley) +
+    p_wet * abs(barley_wet - exp_barley) +
+    (1 - p_dry - p_wet) * abs(barley_normal - exp_barley)
+}
+
+yield_mad_wheat(0.3, 0.2)
+yield_mad_barley(0.3, 0.2)
+```
+
+
+
 
 The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two. So the intersection point of the next plot is the mixed strategy equilbrium (indifference point) in a risk-free environment
 
@@ -138,18 +196,38 @@ nash_eq <- tibble(wheat_prop = round((barley_wet - barley_dry) / (wheat_dry + ba
 
 tibble(wheat_prop = seq(0, 1, .1),
        dry_exp = wheat_prop * wheat_dry + (1 - wheat_prop) * barley_dry,
+       normal_exp = wheat_prop * wheat_normal + (1 - wheat_prop) * barley_normal,
       wet_exp = wheat_prop * wheat_wet + (1 - wheat_prop) * barley_wet) %>%
   gather(type, utility, dry_exp:wet_exp) %>%
   ggplot(aes(wheat_prop, utility)) +
-  geom_hline(yintercept = nash_eq$utility, linetype = 2)+
-  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
+ # geom_hline(yintercept = nash_eq$utility, linetype = 2)+
+#  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
   geom_line(aes(color = type), size = 1.2) +
-  geom_point(data = nash_eq, color = 'black', size = 3) +
-  geom_text(data = nash_eq, 
-            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
-            nudge_x = 0.1, nudge_y = 0.05) +
+#  geom_point(data = nash_eq, color = 'black', size = 3) +
+ # geom_text(data = nash_eq, 
+#            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
+#            nudge_x = 0.1, nudge_y = 0.05) +
   theme_classic()
 ```
+
+```{r}
+tibble(wheat_prop = seq(0, 1, .1),
+       dry_exp = wheat_prop * wheat_dry + (1 - wheat_prop) * barley_dry,
+       normal_exp = wheat_prop * wheat_normal + (1 - wheat_prop) * barley_normal,
+      wet_exp = wheat_prop * wheat_wet + (1 - wheat_prop) * barley_wet,
+      yield_exp = dry_exp + normal_exp + wet_exp, 
+      lower_limit = pmin(dry_exp, normal_exp,wet_exp)) %>%
+  ggplot(aes(yield_exp, lower_limit)) +
+ # geom_hline(yintercept = nash_eq$utility, linetype = 2)+
+#  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
+  geom_line(aes(color = type), size = 1.2) +
+#  geom_point(data = nash_eq, color = 'black', size = 3) +
+ # geom_text(data = nash_eq, 
+#            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
+#            nudge_x = 0.1, nudge_y = 0.05) +
+  theme_classic()
+```
+
 
 ```{r}
 # farmer's ne
@@ -464,10 +542,6 @@ knitr::knit_exit()
 
 Now incorporate realistic drought variability from simulations.
 
-```{r}
-library(raster)
-library(CDFt)
-```
 
 ```{r}
 konya <- matrix(c(32.5, 37.9), nrow = 1)
@@ -475,26 +549,28 @@ konya <- matrix(c(32.5, 37.9), nrow = 1)
 
 sim_present <- brick('~/Downloads/b40.20th.track1.1deg.005.cam2.h0.PRECT.185001-200512.nc') %>%
   raster::extract(konya, df = TRUE) %>%
-  dplyr::select(-ID) %>%
+  select(-ID) %>%
   gather(time, rainfall) %>%
   mutate(rainfall = rainfall * 2.628e+9,
          year = rep(1850:2005, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
          month = rep(1:12, times = 156)) %>%
-  dplyr::select(-time) %>%
+  select(-time) %>%
   mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
   filter(between(water_year, 1932, 2005)) %>%
+   filter(!(month %in% c(5:9))) %>%
   group_by(water_year) %>%
   summarise(precip = sum(rainfall))
 
 sim_past <- brick('~/Downloads/b40.mh6ka.1deg.003.cam2.h0.PRECT.080101-131612.nc') %>% 
   raster::extract(konya, df = TRUE) %>%
-  dplyr::select(-ID) %>%
+  select(-ID) %>%
   gather(time, rainfall) %>%
   mutate(rainfall = rainfall * 2.628e+9,
          year = rep(1:516, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
          month = rep(1:12, times = 516)) %>%
-   dplyr::select(-time) %>%
+  select(-time) %>%
   mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
+   filter(!(month %in% c(5:9))) %>%
   group_by(water_year) %>%
   summarise(precip = sum(rainfall))
 ```
@@ -505,13 +581,13 @@ obs <- read_table('~/Downloads/pa17244.dat',
            col_names = c('year', 1:12), 
            na = c('-999.9', '-888.8')) %>%
   gather(month, precip, `1`:`12`) %>%
- # filter(!(month %in% c(4:10)) & year < 2006) %>%
   group_by(month) %>%
   mutate(precip = if_else(is.na(precip), mean(precip, na.rm = TRUE), precip)) %>%
   ungroup %>%
   mutate(month = as.numeric(month),
          water_year = if_else(month %in% 10:12, year + 1, year)) %>% 
     filter(between(water_year, 1932, 2005)) %>%
+ filter(!(month %in% c(5:9))) %>%
   group_by(water_year) %>%
   summarise(precip = sum(precip))
 ```
@@ -521,9 +597,30 @@ obs_past <- CDFt(obs$precip, sim_present$precip, sim_past$precip)$DS
 
 plot(obs_past)
 
-obs_past < 300
+tibble(droughts = (obs_past < 250)[1:500]) %>%
+  mutate(time = rep(1:20, each = 25))%>%
+  group_by(time) %>%
+  summarise(test = sum(droughts)/25)
 ```
 
+```{r}
+simulation <- accumulate((obs_past < 250), ~learn(.x, .y), .init = agents) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+```
+
+
+```{r, echo = TRUE}
+ggplot(simulation, aes(time, risk)) +
+  geom_point(alpha = .1) +
+  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic()
+```
+
+so in this case drought risk is low enough all the time you never get any diversification
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 maximax
 ```{r}
@@ -565,7 +662,7 @@ plot(0:10, calcNE((0:10)/10))
 
 
 
-so we're imagining a yield of 1 for barley and 2 for wheat, with equal prportions of each. then in the next time step we'd revise the proportion to take away .25
+so we're imagining a yield of 1 for barley and 2 for wheat, with equal proportions of each. then in the next time step we'd revise the proportion to take away .25
 ```{r}
 reallocate <- function(wheat_prop, risk) {
   wheat_prop + 1 * (1.18 * (1 - wheat_prop) - 1.6 * wheat_prop) * wheat_prop * (1 - wheat_prop)
@@ -605,8 +702,9 @@ tibble(rainfall = (0:200) / 100,
   geom_line() +
   geom_hline(yintercept = yield_max_wheat * kcal_wheat) +
   geom_hline(yintercept = yield_max_barley * kcal_barley) +
-  geom_hline(yintercept = 1016525 * 5, color ='red') +
-  geom_vline(xintercept = 0.3)
+  geom_hline(yintercept = 1016525 * 5, color ='red') + # cals for family of 5?
+  geom_vline(xintercept = 0.3) +
+  geom_vline(xintercept = .2)
 ```
 
 How do we define the "drought year" cutoff? Below 300mm there isn't enough wheat growing in a hectare to feed a family of 5, which seems appropriate.
