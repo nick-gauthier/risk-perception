@@ -562,7 +562,7 @@ sim_present <- brick('~/Downloads/b40.20th.track1.1deg.005.cam2.h0.PRECT.185001-
   select(-time) %>%
   mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
   filter(between(water_year, 1932, 2005)) %>%
-   filter(!(month %in% c(5:9))) %>%
+   filter(!(month %in% c(6:9))) %>%
   group_by(water_year) %>%
   summarise(precip = sum(rainfall))
 
