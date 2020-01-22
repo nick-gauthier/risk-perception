@@ -117,18 +117,19 @@ where $P_{dry}^{*}$ is the \emph{perceived}, not realized, risk of a drought in 
 Given these payoffs, what's the point of indifference between the two crop types?
 ```{r, echo = FALSE}
 indiff <- tibble(risk = (barley_wet - wheat_wet) / (wheat_dry - wheat_wet - barley_dry + barley_wet),
-                 utility = risk * wheat_dry + (1 - risk) * wheat_wet)
+                 yield = risk * wheat_dry + (1 - risk) * wheat_wet)
+indiff_label <- paste0('(', round(indiff$risk, 2), ', ', round(indiff$yield, 2), ')')
 
 tibble(risk = seq(0, 1, .1),
       barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
       wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
-  gather(type, utility, barley_exp:wheat_exp) %>%
-  ggplot(aes(risk, utility)) +
-  geom_hline(yintercept = indiff$utility, linetype = 2)+
+  gather(type, yield, barley_exp:wheat_exp) %>%
+  ggplot(aes(risk, yield)) +
+  geom_hline(yintercept = indiff$yield, linetype = 2)+
   geom_vline(xintercept = indiff$risk, linetype = 2) +
   geom_line(aes(color = type), size = 1.2) +
   geom_point(data = indiff, color = 'black', size = 3) +
-  geom_text(data = indiff, label = '(0.3, 1.1)', nudge_x = 0.1, nudge_y = 0.1) +
+  geom_text(data = indiff, label = indiff_label, nudge_x = 0.1, nudge_y = 0.1) +
   theme_classic() +
   ggtitle('Point of indifference between wheat and barley', 'Given varying drought risk')
 ```
@@ -195,6 +196,11 @@ yield_mad_barley(0.3, 0.2)
 
 The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two. So the intersection point of the next plot is the mixed strategy equilbrium (indifference point) in a risk-free environment
 
+```{r}
+qplot(x = c(300, 400, 500), y = c(0, 1.5, 2), geom = 'line') +
+  geom_line(aes(y = c(0.8, 1, 0.5)))
+```
+
 ```{r, echo = FALSE}
 nash_eq <- tibble(wheat_prop = round((barley_wet - barley_dry) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2),
                   utility = round(wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop), 2))
@@ -205,13 +211,13 @@ tibble(wheat_prop = seq(0, 1, .1),
       wet_exp = wheat_prop * wheat_wet + (1 - wheat_prop) * barley_wet) %>%
   gather(type, utility, dry_exp:wet_exp) %>%
   ggplot(aes(wheat_prop, utility)) +
- # geom_hline(yintercept = nash_eq$utility, linetype = 2)+
-#  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
+  geom_hline(yintercept = nash_eq$utility, linetype = 2)+
+  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
   geom_line(aes(color = type), size = 1.2) +
-#  geom_point(data = nash_eq, color = 'black', size = 3) +
- # geom_text(data = nash_eq, 
-#            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
-#            nudge_x = 0.1, nudge_y = 0.05) +
+  geom_point(data = nash_eq, color = 'black', size = 3) +
+  geom_text(data = nash_eq, 
+            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
+            nudge_x = 0.1, nudge_y = 0.05) +
   theme_classic()
 ```
 
@@ -225,7 +231,7 @@ tibble(wheat_prop = seq(0, 1, .1),
   ggplot(aes(yield_exp, lower_limit)) +
  # geom_hline(yintercept = nash_eq$utility, linetype = 2)+
 #  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
-  geom_line(aes(color = type), size = 1.2) +
+  geom_line( size = 1.2) +
 #  geom_point(data = nash_eq, color = 'black', size = 3) +
  # geom_text(data = nash_eq, 
 #            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
@@ -248,55 +254,8 @@ when you sample from the expected value, use that to choose a strategy. but if y
 So at between 3 in 10 and 4 in 10 risk of drought, a maximizer will switchfrom wheat to barley.
 
 
-```{r}
-test_dat <- expand_grid(wheat_prop = (0:10)/10,
-       risk = seq(.1, .9, 0.1)) %>%
-  mutate(util_wet = (1 - risk) * (wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop)),
-         util_dry = risk * (wheat_dry * wheat_prop + barley_dry * (1 - wheat_prop)),
-         util_wheat = wheat_prop * (wheat_wet * (1 - risk) + wheat_dry *  risk),
-         util_barley = (1 - wheat_prop) * (barley_wet* (1 - risk) + barley_dry * risk),
-         payoff_exp = util_dry + util_wet,
-         payoff_max = pmax(util_wheat, util_barley))
-```
-
-```{r}
-nash_eq2 <- tibble(risk = seq(0.1, 0.9, 0.1),
-                   wheat_prop = pmax(round(((1 - risk) * barley_wet - risk * barley_dry) / (risk * wheat_dry + (1 - risk) * barley_wet - ((1 - risk) * wheat_wet + risk * barley_dry)), 2), 0),
-                  utility = round(risk * wheat_dry * wheat_prop + risk * barley_dry * (1 - wheat_prop), 2))
-
-test_dat %>%
-  select(-(util_wheat:util_barley)) %>%
-  gather(type, utility, c(util_dry, util_wet)) %>%
-    ggplot(aes(wheat_prop, utility)) + 
-  geom_line(aes(color = type)) + 
-  facet_wrap(~risk) + 
-  geom_hline(data = nash_eq2, aes(yintercept = utility), alpha = .3, linetype = 2) + 
-  geom_vline(data = nash_eq2, aes(xintercept = wheat_prop), alpha = 0.3,linetype = 2) +
-  geom_point(data = nash_eq2) +
-  theme_minimal()
-# hmmm, on second thought this might not make any sense, what's actually informative here is tha maximum value, which is the same as saying whether it is above or below the indifference threshold. but beyond that the idea of the nash equilibrium at different risk levels doesn't make sense, becuase then the nash equilibrium is, under the hood, adding another risk assessment to nature's moves.
-```
-
-
-```{r}
-test_dat %>%
-  select(-(util_dry:util_wet)) %>%
-  gather(type, util, util_wheat:util_barley) %>%
-  ggplot(aes(wheat_prop, util, color = type)) + 
-  geom_line() + 
-  facet_wrap(~risk) + 
- # geom_vline(xintercept = nash_eq$wheat_prop) +
-  theme_minimal()
-```
-
 *Here we see that the mixed strategy that maximizes expected utility is always a pure strategy.*
-```{r}
-test_dat %>%
-  gather(type, utility, payoff_exp:payoff_max) %>%
-  ggplot(aes(wheat_prop, utility)) + 
-  geom_line(aes(color = type)) +
-  facet_wrap(~risk)
-```
+
 
 
 ```{r}
@@ -575,7 +534,7 @@ sim_past <- brick('~/Downloads/b40.mh6ka.1deg.003.cam2.h0.PRECT.080101-131612.nc
          month = rep(1:12, times = 516)) %>%
   select(-time) %>%
   mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
-   filter(!(month %in% c(5:9))) %>%
+   filter(!(month %in% c(6:9))) %>%
   group_by(water_year) %>%
   summarise(precip = sum(rainfall))
 ```
@@ -592,7 +551,7 @@ obs <- read_table('~/Downloads/pa17244.dat',
   mutate(month = as.numeric(month),
          water_year = if_else(month %in% 10:12, year + 1, year)) %>% 
     filter(between(water_year, 1932, 2005)) %>%
- filter(!(month %in% c(5:9))) %>%
+ filter(!(month %in% c(6:9))) %>%
   group_by(water_year) %>%
   summarise(precip = sum(precip))
 ```
