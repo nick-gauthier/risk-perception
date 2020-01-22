@@ -41,19 +41,24 @@ Estimates of yield volume (t/ha) for each crop type in wet and dry years were de
 Table: Estimated yields for ancient wheat and barley varieties derived from [@Slafer1999].
 
 ```{r}
-#wheat_dry <- 0
-#wheat_wet <- 1.6
-#barley_dry <- 0.93
-#barley_wet <- 1.18
+wheat_dry <- 0
+wheat_normal <- 1.5
+wheat_wet <- 1.7
 
-wheat_dry <- 30
-wheat_normal <- 60
-wheat_wet <- 70
-
-barley_dry <- 50
-barley_normal <- 50
-barley_wet <- 40
+barley_dry <- 0.8
+barley_normal <- 1
+barley_wet <- 0.5
 ```
+
+```{r}
+readxl::read_xls('41467_2014_BFncomms4953_MOESM580_ESM.xls', range = 'A2:O370') %>%
+  select(`Site Location`, Taxon, `ky cal BP`, `GY (t*ha-1)`) %>%
+  filter(!is.na(`GY (t*ha-1)`)) %>% 
+  group_by(`Site Location`, Taxon) %>%
+  summarise(yield_mean = mean(`GY (t*ha-1)`)) %>%
+  spread(Taxon, yield_mean)
+```
+
 
 Optimal wheat/barley proportions can be calculated using two different objective functions representing different decision making types of farmers. 
 
