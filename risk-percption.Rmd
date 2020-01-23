@@ -1,5 +1,5 @@
 ---
-title: "Crop diversification in a game against nature"
+title: "Crop diversification in a game against nature in a mediterranean agro-ecosystem"
 author: "Nick Gauthier"
 date: ""
 bibliography: refs.bib 
@@ -17,7 +17,7 @@ library(CDFt)
 
 Over the past 10,000 years, subsistence farmers in the Mediterranean basin have developed sophisticated strategies to maintain stable food supplies given uncertain rainfall. Their suite of strategies include practices like crop diversification, storage, and exchange [@Halstead1989]). These risk-management strategies all represent forms of \emph{regulatory feedback} used to manage complex socio-ecological systems. Regulatory feedbacks convert a system's high-variance inputs into low-variance outputs by dynamically monitoring the outputs and adjusting internal properties of the system [@Anderies2015]. Risk-managing strategies require farmers to make specific resource allocation decisions in response to environmental risks, and as regulatory feedbacks they are thus sensitive to variability in both the spatiotemporal patterns of risk and the ability of farmers to perceive and act on those patterns.
 
-Crop diversification is an excellent example of a widespread and effective regulatory feedback strategy (Figure 1). Relying on a mix of food types with different climatic tolerances is an efficient way to maintain a robust food supply [@helmers2001separating,Anderies2006]. In the Mediterranean, land-use strategies involving a diversified portfolio of wheat and barley have been employed by even the earliest sedentary farmers, and continue to be used to this day [@GOULD1963a,Slafer1999,Abbo2009a,Marston2011190]. Wheat generally has higher yields but is sensitive to water deficits, while barley is less productive but drought tolerant. Planting a mix of wheat and barley, either in the same plot or in a combination of plots, is an effective means of diversifying grain supplies. By adjusting the ratio of wheat to barley, farmers can adapt to changing drought risks.
+Crop diversification is an excellent example of a widespread and effective regulatory feedback strategy (Figure 1). Relying on a mix of food types with different climatic tolerances is an efficient way to maintain a robust food supply [@helmers2001separating,Anderies2006]. In the Mediterranean, land-use strategies involving a diversified portfolio of wheat and barley have been employed by even the earliest sedentary farmers, and continue to be used to this day [@GOULD1963a,Slafer1999,Abbo2009a,Marston2011190]. Wheat generally has higher yields but is sensitive to water deficits, while barley has lower yields and is drought tolerant. Planting a mix of wheat and barley, either in the same plot or in a combination of plots, is an effective means of diversifying grain supplies. By adjusting the ratio of wheat to barley, farmers can adapt to changing drought risks.
 
 ![Conceptual model of crop diversification as a regulatory feedback system. Uncertain rainfall leads to uncertain returns from land-use systems. To keep food supplies stable, farmers must monitor year-to-year variations and decide what combination of crops works best to minimize that variance.](figures/regulatory_feedback.png)
 Are these crop-diversification strategies vulnerable to the same dynamics as other social-ecological systems with similar regulatory feedbacks mechanisms? One way to address this is to model the influence of imperfect monitoring and biased decision making in uncertain environments. In this study, I accomplish this by answering two main questions:
@@ -151,55 +151,22 @@ expected_yield_wheat(p_dry = 0.3, p_wet = 0.2)
 expected_yield_barley(p_dry = 0.3, p_wet = 0.2)
 ```
 
+```{r}
+expand_grid(wheat_prop = seq(0, 1, .01),
+       risk = seq(.1, .9, .1)) %>%
+  mutate(wheat_exp = wheat_prop * expected_yield_wheat(risk,0),
+      barley_exp = (1 - wheat_prop) * expected_yield_barley(risk, 0),
+      exp_yield = wheat_exp + barley_exp) %>%
+  ggplot(aes(wheat_prop, exp_yield, group = risk, color = risk)) +
+  geom_line()
+```
+
+
 The risk averse MAXIMIN pure strategy is to plant barley all the time, and the risk indifferent farmer plants wheat for its high yields
-
-```{r}
-yield_var_wheat <- function(p_dry, p_wet) {
-  exp_wheat <- expected_yield_wheat(p_dry, p_wet)
-  p_dry * (wheat_dry - exp_wheat) ^ 2 +
-    p_wet * (wheat_wet - exp_wheat) ^ 2 +
-    (1 - p_dry - p_wet) * (wheat_normal - exp_wheat) ^ 2
-}
-
-yield_var_barley <- function(p_dry, p_wet) {
-  exp_barley <- expected_yield_barley(p_dry, p_wet)
-  p_dry * (barley_dry - exp_barley) ^ 2 +
-    p_wet * (barley_wet - exp_barley) ^ 2 +
-    (1 - p_dry - p_wet) * (barley_normal - exp_barley) ^ 2
-}
-
-yield_var_wheat(0.3, 0.2)
-yield_var_barley(0.3, 0.2)
-```
-
-```{r}
-yield_mad_wheat <- function(p_dry, p_wet) {
-  exp_wheat <- expected_yield_wheat(p_dry, p_wet)
-  p_dry * abs(wheat_dry - exp_wheat) +
-    p_wet * abs(wheat_wet - exp_wheat) +
-    (1 - p_dry - p_wet) * abs(wheat_normal - exp_wheat)
-  }
-
-yield_mad_barley <- function(p_dry, p_wet) {
-  exp_barley <- expected_yield_barley(p_dry, p_wet)
-  p_dry * abs(barley_dry - exp_barley) +
-    p_wet * abs(barley_wet - exp_barley) +
-    (1 - p_dry - p_wet) * abs(barley_normal - exp_barley)
-}
-
-yield_mad_wheat(0.3, 0.2)
-yield_mad_barley(0.3, 0.2)
-```
-
-
 
 
 The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two. So the intersection point of the next plot is the mixed strategy equilbrium (indifference point) in a risk-free environment
 
-```{r}
-qplot(x = c(300, 400, 500), y = c(0, 1.5, 2), geom = 'line') +
-  geom_line(aes(y = c(0.8, 1, 0.5)))
-```
 
 ```{r, echo = FALSE}
 nash_eq <- tibble(wheat_prop = round((barley_wet - barley_dry) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2),
@@ -221,23 +188,6 @@ tibble(wheat_prop = seq(0, 1, .1),
   theme_classic()
 ```
 
-```{r}
-tibble(wheat_prop = seq(0, 1, .1),
-       dry_exp = wheat_prop * wheat_dry + (1 - wheat_prop) * barley_dry,
-       normal_exp = wheat_prop * wheat_normal + (1 - wheat_prop) * barley_normal,
-      wet_exp = wheat_prop * wheat_wet + (1 - wheat_prop) * barley_wet,
-      yield_exp = dry_exp + normal_exp + wet_exp, 
-      lower_limit = pmin(dry_exp, normal_exp,wet_exp)) %>%
-  ggplot(aes(yield_exp, lower_limit)) +
- # geom_hline(yintercept = nash_eq$utility, linetype = 2)+
-#  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
-  geom_line( size = 1.2) +
-#  geom_point(data = nash_eq, color = 'black', size = 3) +
- # geom_text(data = nash_eq, 
-#            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
-#            nudge_x = 0.1, nudge_y = 0.05) +
-  theme_classic()
-```
 
 
 ```{r}
@@ -258,18 +208,6 @@ So at between 3 in 10 and 4 in 10 risk of drought, a maximizer will switchfrom w
 
 
 
-```{r}
-calc_ratio <- function(risk) {
-  pmax(0, (risk * barley_dry + (risk - 1) * barley_wet) / (risk * (barley_dry - wheat_dry) + wheat_wet * -1 * risk + wheat_wet + barley_wet * (risk - 1)))
-}
-
-
-tibble(risk = seq(0, 1, .01),
-       ratio = calc_ratio(risk)) %>%
-  ggplot(aes(risk, ratio)) +
-  geom_line() + 
-  theme_classic()
-```
 
 
 ## Crop Allocation Decisions
