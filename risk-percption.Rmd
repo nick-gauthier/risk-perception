@@ -33,21 +33,19 @@ Assume two different crops, a low yield drought tolerant crop (barley) and a hig
 
 Estimates of yield volume (t/ha) for each crop type in wet and dry years were derived from isotopic studies of ancient wheat and barley samples from archaeological sites in the Mediterranean [@Slafer1999] (Table 1). 
 
-||Dry Year|Normal Year|Wet Year|
-|-------|-----|-----|----|----|
-|Barley Yield|0.93|1.18||
-|Wheat Yield|0|1.60||
+||Dry Year|Normal Year|
+|-------|-----|-----|----|
+|Barley Yield|0.93|1.18|
+|Wheat Yield|0|1.60|
 
 Table: Estimated yields for ancient wheat and barley varieties derived from [@Slafer1999].
 
 ```{r}
 wheat_dry <- 0
-wheat_normal <- 1.5
-wheat_wet <- 1.7
+wheat_normal <- 1.6
 
-barley_dry <- 0.8
-barley_normal <- 1
-barley_wet <- 0.5
+barley_dry <- 0.93
+barley_normal <- 1.18
 ```
 
 ```{r}
@@ -76,18 +74,7 @@ If we're using the empirical frequency distirubtion of nature's moves, then we a
 
 We could think of other algorithms that would minimize the cumulative or average regret of a player over many years in a situation with nonstationary rainfall, but we have to remain within cognitive limits.
 
-* Maximax
-2. Maximize *subjective* expected utility
-3. Satisficing learning -- win-stay lose-move
-4. Nash equilibrium -- minimax (risk free)
-5. Fictitious play learning rule -- use empirical frequency distribution.
-A. Good against environment when environment is stationary but not when its nonstationary.
-B. Bayesian belief based learning
-
 The pure maximin strategy is to plant barley:
-```{r}
-max(wheat_dry, barley_dry)
-```
 
 Alternatively, yield maximizing farmers simply seek to maximize the function for their expected utility given all possible states of nature
 \begin{equation}
@@ -113,17 +100,31 @@ Risk minimizing farmers play the equivalent of a mixed strategy Nash equilibrium
 \end{equation}
 where $P_{dry}^{*}$ is the \emph{perceived}, not realized, risk of a drought in a particular year. The solution to this function represents the ratio of wheat to barley that would make a farmer indifferent to whether a drought would occur in a given year.
 
+The expected yield is thus calculated as.
+```{r}
+expected_yield_wheat <- function(risk) {
+  risk * wheat_dry + (1 - risk) * wheat_normal
+}
+
+expected_yield_barley <- function(risk) {
+  risk * barley_dry + (1 - risk) * barley_normal
+}
+
+expected_yield <- function(risk) {
+  expected_yield_wheat(risk) + expected_yield_barley(risk)
+}
+```
 
 Given these payoffs, what's the point of indifference between the two crop types?
-```{r, echo = FALSE}
-indiff <- tibble(risk = (barley_wet - wheat_wet) / (wheat_dry - wheat_wet - barley_dry + barley_wet),
-                 yield = risk * wheat_dry + (1 - risk) * wheat_wet)
+```{r, echo = FALSE, fig.cap=title = 'Expected wheat and barley yields under increasing drought risk with the point of indifference highlighted.'}
+indiff <- tibble(risk = (barley_normal - wheat_normal) / (wheat_dry - wheat_normal - barley_dry + barley_normal),
+                 yield = risk * wheat_dry + (1 - risk) * wheat_normal)
 indiff_label <- paste0('(', round(indiff$risk, 2), ', ', round(indiff$yield, 2), ')')
 
 tibble(risk = seq(0, 1, .1),
-      barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
-      wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet) %>%
-  gather(type, yield, barley_exp:wheat_exp) %>%
+      Barley = expected_yield_barley(risk),
+      Wheat = expected_yield_wheat(risk)) %>%
+  gather(type, yield, Barley:Wheat) %>%
   ggplot(aes(risk, yield)) +
   geom_hline(yintercept = indiff$yield, linetype = 2)+
   geom_vline(xintercept = indiff$risk, linetype = 2) +
@@ -131,70 +132,19 @@ tibble(risk = seq(0, 1, .1),
   geom_point(data = indiff, color = 'black', size = 3) +
   geom_text(data = indiff, label = indiff_label, nudge_x = 0.1, nudge_y = 0.1) +
   theme_classic() +
-  ggtitle('Point of indifference between wheat and barley', 'Given varying drought risk')
+  scale_color_discrete(name = 'Crop') +
+  labs(x = 'Drought probability', y = 'Expected yield')
 ```
 
 
-The expected yield is thus calculated as.
-```{r}
-expected_yield_wheat <- function(p_dry, p_wet) {
-  p_dry * wheat_dry + p_wet * wheat_wet + (1 - p_wet - p_dry) * wheat_normal 
-}
-
-expected_yield_barley <- function(p_dry, p_wet) {
-  p_dry * barley_dry + p_wet * barley_wet + (1 - p_wet - p_dry) * barley_normal 
-}
-```
-
-```{r}
-expected_yield_wheat(p_dry = 0.3, p_wet = 0.2)
-expected_yield_barley(p_dry = 0.3, p_wet = 0.2)
-```
-
-```{r}
-expand_grid(wheat_prop = seq(0, 1, .01),
-       risk = seq(.1, .9, .1)) %>%
-  mutate(wheat_exp = wheat_prop * expected_yield_wheat(risk,0),
-      barley_exp = (1 - wheat_prop) * expected_yield_barley(risk, 0),
-      exp_yield = wheat_exp + barley_exp) %>%
-  ggplot(aes(wheat_prop, exp_yield, group = risk, color = risk)) +
-  geom_line()
-```
-
-
-The risk averse MAXIMIN pure strategy is to plant barley all the time, and the risk indifferent farmer plants wheat for its high yields
-
-
-The maximin strategy here is to plant barley all the time, but this entails a huge opportunity cost over planting wheat or a mix of the two. So the intersection point of the next plot is the mixed strategy equilbrium (indifference point) in a risk-free environment
-
-
-```{r, echo = FALSE}
-nash_eq <- tibble(wheat_prop = round((barley_wet - barley_dry) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2),
-                  utility = round(wheat_wet * wheat_prop + barley_wet * (1 - wheat_prop), 2))
-
-tibble(wheat_prop = seq(0, 1, .1),
-       dry_exp = wheat_prop * wheat_dry + (1 - wheat_prop) * barley_dry,
-       normal_exp = wheat_prop * wheat_normal + (1 - wheat_prop) * barley_normal,
-      wet_exp = wheat_prop * wheat_wet + (1 - wheat_prop) * barley_wet) %>%
-  gather(type, utility, dry_exp:wet_exp) %>%
-  ggplot(aes(wheat_prop, utility)) +
-  geom_hline(yintercept = nash_eq$utility, linetype = 2)+
-  geom_vline(xintercept = nash_eq$wheat_prop, linetype = 2) +
-  geom_line(aes(color = type), size = 1.2) +
-  geom_point(data = nash_eq, color = 'black', size = 3) +
-  geom_text(data = nash_eq, 
-            label = paste0('(', nash_eq$wheat_prop, ', ', nash_eq$utility, ')'),
-            nudge_x = 0.1, nudge_y = 0.05) +
-  theme_classic()
-```
 
 
 
 ```{r}
 # farmer's ne
-pmax(0, round((barley_wet - barley_dry) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2))
+pmax(0, round((barley_normal - barley_dry) / (wheat_dry + barley_normal - (wheat_normal + barley_dry)), 2))
 #nature's ne
-round((barley_wet - wheat_wet) / (wheat_dry + barley_wet - (wheat_wet + barley_dry)), 2)
+round((barley_normal - wheat_normal) / (wheat_dry + barley_normal - (wheat_normal + barley_dry)), 2)
 ```
 
 0.3111 is also the indifference point for the farmer with respect to crops. That is, if we imagine nature playing strategically, a drought would occur with probability 0.31111 because that would make nature indifferent to whether the farmer planted wheat or barley.
@@ -247,13 +197,14 @@ Allow the agents to learn the drought risk over time. Also need to calculate the
 ```{r}
 learn <- function(agents, drought) {
   if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
-  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
-  
+  if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
+
   agents %>%
     # farmer's turn to decide what to plant
-      mutate(yield_exp = expected_utility(risk),
-         barley_exp = risk * barley_dry + (1 - risk) * barley_wet,
-         wheat_exp = risk * wheat_dry + (1 - risk) * wheat_wet,
+      mutate(yield_exp = expected_yield(risk),
+         barley_exp = expected_yield_barley(risk),
+         wheat_exp = expected_yield_wheat(risk),
+         expected_yield = barley_exp + wheat_exp,
          crop = case_when(barley_exp > wheat_exp ~ 'barley',
                               barley_exp < wheat_exp ~ 'wheat',
                               barley_exp == wheat_exp ~ 'either'),
@@ -281,6 +232,113 @@ learn_satisficing <- function(agents, drought, aspiration) {
            wheat_prop = if_else(payoff > aspiration, wheat_prop, new_prop)) %>%
     select(-new_prop)
 }
+```
+
+
+Run an experiment. Simulate a time series with varying drought frequency.
+```{r}
+droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
+```
+
+```{r}
+simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+```
+
+
+```{r, echo = TRUE}
+ggplot(simulation, aes(time, risk)) +
+  geom_point(alpha = .1) +
+  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic()
+```
+
+```{r, echo = TRUE}
+simulation %>%
+  group_by(time, crop) %>%
+  tally() %>%
+ggplot(aes(time, n, fill = crop)) +
+  geom_bar(width = 1, stat = 'identity') +
+  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
+  theme_classic()
+```
+
+These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
+```{r}
+ggplot(simulation, aes(time, wheat_prop)) +
+  geom_point(alpha = .3) +
+  theme_classic()
+```
+
+```{r}
+simulation %>%
+  group_by(time) %>%
+  summarise(famine = sum(payoff < .1)) %>%
+ggplot(aes(time, famine)) +
+  geom_line() +
+  theme_classic()
+```
+
+```{r}
+simulation %>%
+  group_by(time) %>%
+  summarise(payoff = mean(payoff)) %>%
+ggplot(aes(time,payoff)) +
+  geom_point(aes(color = time)) +
+  theme_classic()
+```
+
+```{r}
+library(ggridges)
+simulation %>%
+  mutate(time_step = 5 * round(time/5),
+         famine = payoff == 0) %>%
+  ggplot(aes(famine, as.factor(time_step))) +
+  geom_density_ridges(rel_min_height = 0.005) +
+  theme_ridges()
+```
+
+
+
+
+make this a function to calculate payoffs for all wheat or all barley strategies as a comparison
+```{r}
+tibble(drought = droughts,
+       barley = if_else(droughts == FALSE, barley_normal, barley_dry),
+       wheat = if_else(droughts == FALSE, wheat_normal, wheat_dry),
+       equal = (barley + wheat) / 2) %>%
+  mutate(time = 1:n()) %>%
+  gather(crop, yield, barley:equal) %>%
+  ggplot(aes(time, yield, group = crop, color = crop)) +
+  geom_point()
+```
+
+```{r}
+tibble(drought = droughts,
+       barley = if_else(droughts == FALSE, barley_normal, barley_dry),
+       wheat = if_else(droughts == FALSE, wheat_normal, wheat_dry),
+       equal = (barley + wheat) / 2) %>%
+  mutate(time = 1:n()) %>%
+  gather(crop, yield, barley:equal) %>%
+  mutate(famine = yield == 0) %>%
+  ggplot(aes(time, famine, group = crop, color = crop)) +
+  geom_line()
+```
+
+
+```{r}
+test3 <- tibble(agent = 1:100) %>%
+  mutate(wheat_prop = round(runif(n()), 2))
+
+simulation2 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .5), .init = test3) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+  
+simulation2 %>% ggplot(aes(as.numeric(time), payoff, group = agent)) + geom_point(alpha = .2)
+simulation2 %>% ggplot(aes(as.numeric(time), wheat_prop, group = agent)) + geom_point(alpha = .2)
 ```
 
 
@@ -373,65 +431,6 @@ During periods of climatic stability, allowing past experiences to influence dec
 
 Statistically downscaling palaeoclimate simulations and coupling them to game theoretic models of decision making under uncertainty is a simple way to better understand the patterning of climate changes and the regulatory feedbacks farmers use to adapt to them. To further explore these patterns, future work should incorporate additional risk-minimizing strategies such as storage and exchange. Food storage and exchange can also be thought of as forms of diversification, the former in the time and the latter in space [@Marston2011190]. Food exchange would be of particular interest from a game theoretic perspective, as incomplete information with respect to an exchange partner's crop diversification and storage practices can lead to situations of moral hazard.
 
-Run an experiment. Simulate a time series with varying drought frequency.
-```{r}
-droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
-```
-
-```{r}
-simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
-  bind_rows(.id = 'time') %>%
-  mutate(time = as.numeric(time)) %>%
-  filter(time != 1)
-```
-
-
-```{r, echo = TRUE}
-ggplot(simulation, aes(time, risk)) +
-  geom_point(alpha = .1) +
-  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
-  theme_classic()
-```
-
-```{r, echo = TRUE}
-simulation %>%
-  group_by(time, crop) %>%
-  tally() %>%
-ggplot(aes(time, n, fill = crop)) +
-  geom_bar(width = 1, stat = 'identity') +
-  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
-  theme_classic()
-```
-
-These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
-```{r}
-ggplot(simulation, aes(time, wheat_prop)) +
-  geom_point(alpha = .3) +
-  theme_classic()
-```
-
-
-```{r}
-test3 <- tibble(agent = 1:100) %>%
-  mutate(wheat_prop = round(runif(n()), 2))
-
-simulation2 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .8), .init = test3) %>% 
-  bind_rows(.id = 'time') %>%
-  mutate(time = as.numeric(time)) %>%
-  filter(time != 1)
-  
-simulation2 %>% ggplot(aes(as.numeric(time), payoff, group = agent)) + geom_point(alpha = .2)
-simulation2 %>% ggplot(aes(as.numeric(time), wheat_prop, group = agent)) + geom_point(alpha = .2)
-```
-
-```{r}
-simulation %>%
-  group_by(time) %>%
-  summarise(famine = sum(payoff == 0)) %>%
-ggplot(aes(time, famine)) +
-  geom_line() +
-  theme_classic()
-```
 
 Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
 
