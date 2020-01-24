@@ -192,6 +192,56 @@ agents <- tibble(id = 1:150,
 agents
 ```
 
+## Bayesian Updating
+
+```{r}
+prior <- function(m,n){
+a = n * m
+b = n * (1 - m)
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+tibble(year = 1:20,
+       risk = .5) %>%
+  mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
+  unnest(cols = c(belief)) %>%
+  ggplot(aes(x, y)) +
+  geom_line() +
+  facet_wrap( ~year) +
+  theme_bw() +
+  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
+
+#prior(.5, ) %>% plot
+```
+
+```{r}
+likelihood <- function(N,Y){
+a <- Y + 1
+b <- N - Y + 1
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+#likelihood(1, 1)%>% plot
+```
+
+```{r}
+posterior <- function(m,n,N,Y){
+a <- Y + (n*m) -1
+b <- N - Y + (n*(1-m)) - 1
+dom <- seq(0,1,0.005)
+val <- dbeta(dom,a,b)
+return(data.frame('x'=dom, 'y'=val))
+}
+
+#dbeta(seq(0,1,0.005), -1, 0)
+#prior(.5, 2) %>% plot
+#posterior(.5, 3, 1, 1) %>% plot
+```
+
 Allow the agents to learn the drought risk over time. Also need to calculate the actual payoffs for each agent.
 
 ```{r}
@@ -341,56 +391,48 @@ simulation2 %>% ggplot(aes(as.numeric(time), payoff, group = agent)) + geom_poin
 simulation2 %>% ggplot(aes(as.numeric(time), wheat_prop, group = agent)) + geom_point(alpha = .2)
 ```
 
-
-## Bayesian Updating
-
 ```{r}
-prior <- function(m,n){
-a = n * m
-b = n * (1 - m)
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-tibble(year = 1:20,
-       risk = .5) %>%
-  mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
-  unnest(cols = c(belief)) %>%
-  ggplot(aes(x, y)) +
-  geom_line() +
-  facet_wrap( ~year) +
-  theme_bw() +
-  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
-
-#prior(.5, ) %>% plot
+load('../Silvanus/R/sysdata.rda')
+life_table
+fertility_shape <- 4.579627
+fertility_scale <- 0.1
+survivor_scale <- 0.1
 ```
 
 ```{r}
-likelihood <- function(N,Y){
-a <- Y + 1
-b <- N - Y + 1
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
+reproduce <- function(individuals, food_ratio = 0.7) {
+  individuals %>%
+    left_join(life_table, by = 'age') %>% 
+    mutate(fertility_reduction = pgamma(food_ratio, shape = fertility_shape, scale = fertility_scale),
+           reproduced = rbernoulli(n(), fertility_rate / 2 * fertility_reduction)) %>% # divide by two to make everyone female
+    filter(reproduced == TRUE) %>% # if nrows == 0, will give a (for some reason unsuppressible) warning
+    tally %>% # count births per household
+    uncount(n) %>% # repeat rows based on birth count per household
+    mutate(age = 0) %>%
+    bind_rows(individuals, .) %>%
+    ungroup # check for filled na's here?
 }
 
-#likelihood(1, 1)%>% plot
+
+die <- function(individuals, food_ratio = 0.7) {
+  individuals %>%
+        left_join(life_table, by = 'age') %>% 
+    mutate(survival_reduction = pgamma(pmin(1, food_ratio), shape = survival_shape, scale = survivor_scale),
+           survived = rbernoulli(n(), survival_rate * survival_reduction)) %>%
+    filter(survived == TRUE) %>%
+    select(-c(fertility_rate:survived)) %>%
+    mutate(age = age + 1)
+}
+
 ```
+
 
 ```{r}
-posterior <- function(m,n,N,Y){
-a <- Y + (n*m) -1
-b <- N - Y + (n*(1-m)) - 1
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-#dbeta(seq(0,1,0.005), -1, 0)
-#prior(.5, 2) %>% plot
-#posterior(.5, 3, 1, 1) %>% plot
+reduce(1:600, ~reproduce(.x) %>% die , .init = agents2 %>% mutate(age = sample.int(80, size = 150, replace = TRUE))) %>%
+  pull(age) %>% hist
 ```
+
+
 
 
 ## Climate Modeling and Bias Correction
@@ -400,46 +442,8 @@ Estimates of drought risk in the eastern Mediterranean during the the past 10,00
 ![Example model precipitation outputs from the TraCE-21k simulation at 9.5ka BP.](figures/trace_white.png)
 
 
-The computational complexity of the TraCE-21k simulation requires it to be run at a coarse (~200km) spatial resolution. At this resolution, key hydroclimate processes such as individual cloud formation cannot be simulated directly, leading to biases in the distribution of modeled precipitation. In order to reveal climate patterns at regional scales, outputs from this simulation must be statistically downscaled and bias corrected. The cumulative distribution function transform (CDF-t) method is a skillful yet conceptually simple technique to downscale and bias-corrected GCM data [@Michelangeli2009]. The technique works directly with the CDFs of observed and simulated climate variables, rather than individual observations. A function is first derived that transforms the CDF of GCM data to match the CDF of weather-station observations from the same period. The same function is then used to transform the CDFs of GCM data from different time periods, accounting for the changes in the CDFs from one simulation period to another (Figure 3). CDF-t is nonparametric, and thus more data-driven than weather generators and related statistical downscaling methods that rely to a greater degree on external assumptions about the nature of the data.
-
-![CDFs for simulated and observed precipitation in the present day, and simulated and bias-corrected precipitation in the past.](figures/cdf.png)
-
 TraCE-21k simulation outputs for the past 10,000 years were bias-corrected using the CDF-t method and observed precipitation from a weather station in near the town of Salihli in western Turkey. This location was selected due to its long (~70yr) observational record, the representativeness of western Anatolian climate for the greater eastern Mediterranean, and its proximity to archaeological sites with comparative evidence of crop diversification strategies.
 
-
-\section{Results and Discussion}
-
-\begin{figure}[htp]
-\centering
-\includegraphics[width=16cm]{precon.png}
-\caption{Bias-corrected wet season (October-March) precipitation accumulations from the past 10,000 years of TraCE-21k simulation. 1 point = 1 year, color corresponds to whether that year falls bellow the thresholds for wheat or barley crop failure.}
-\end{figure}
-
-The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
-
-The risk of crop failure due to drought in any given year varies between 10\% and 20\%, punctuated by one to four century-long events where risk drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high drought risk cluster around known periods of regional and global climate deterioration, such as at 8.6ka BP and 4.2ka BP.
-
-![Annual risk of wheat crop failure due to drought, averaged by century.](figures/wheatrisk.png)
-
-
-Given the average drought risks estimated from TraCE-21k and assuming perfect monitoring and recall of recent droughts (i.e. $\lambda = 0$), farmers intent on minimizing the risk of crop failure would be expected to plant about 65\% barley to 35\% wheat on average. This proportion is within the range estimated from macrobotanical remains at a nearby archaeological site [@Marston2011190]. Yield maximizing farmers instead play a pure strategy profile, planting wheat if the perceived drought risk is less than 0.68 and barley if it is more. Because the GCM-simulated drought risk never rises above this threshold, a yield-maximizing farmer will always plant a wheat monocrop.
-
-
-Examining the long-term dynamics of crop yields among all decision-making strategies and psychological profiles reveals variability in yields due to different decision making preferences is far greater variability due to differences in risk perception (Figure 7). Risk-minimizing strategies sacrifice productivity for predictability, consistently lowering the mean and variance of crop yields over time. Risk-minimizing strategies are more sensitive to risk perception than yield-maximizing strategies; varying the memory decay rate parameter $\lambda$ had no effect on the optimal crop allocation for yield maximizers. 
-
-During periods of climatic stability, allowing past experiences to influence decision making helps farmers minimize the impacts of \emph{predictable} drought. But past experiences are less informative during periods of rapid climate change, and even farmers who manage risk “optimally” experience major food shortfalls. Climatically-induced variability in food supplies consistently surpasses that from differences in risk-perception psychology, but not that from different risk aversion preferences. This finding suggests that the efficacy of risk managing strategies that rely on regulatory feedbacks is limited to periods of relative climatic stability. This is consistent with the observation from the Roman Period Mediterranean that while minor food crises were common in the ancient world, extreme famines were rare [@Garnsey1989].
-
-Statistically downscaling palaeoclimate simulations and coupling them to game theoretic models of decision making under uncertainty is a simple way to better understand the patterning of climate changes and the regulatory feedbacks farmers use to adapt to them. To further explore these patterns, future work should incorporate additional risk-minimizing strategies such as storage and exchange. Food storage and exchange can also be thought of as forms of diversification, the former in the time and the latter in space [@Marston2011190]. Food exchange would be of particular interest from a game theoretic perspective, as incomplete information with respect to an exchange partner's crop diversification and storage practices can lead to situations of moral hazard.
-
-
-Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
-
-
-# References
-
-```{r}
-knitr::knit_exit()
-```
 
 Now incorporate realistic drought variability from simulations.
 
@@ -509,6 +513,40 @@ ggplot(simulation, aes(time, risk)) +
   theme_classic()
 ```
 
+\section{Results and Discussion}
+
+\begin{figure}[htp]
+\centering
+\includegraphics[width=16cm]{precon.png}
+\caption{Bias-corrected wet season (October-March) precipitation accumulations from the past 10,000 years of TraCE-21k simulation. 1 point = 1 year, color corresponds to whether that year falls bellow the thresholds for wheat or barley crop failure.}
+\end{figure}
+
+The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
+
+The risk of crop failure due to drought in any given year varies between 10\% and 20\%, punctuated by one to four century-long events where risk drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high drought risk cluster around known periods of regional and global climate deterioration, such as at 8.6ka BP and 4.2ka BP.
+
+![Annual risk of wheat crop failure due to drought, averaged by century.](figures/wheatrisk.png)
+
+
+Given the average drought risks estimated from TraCE-21k and assuming perfect monitoring and recall of recent droughts (i.e. $\lambda = 0$), farmers intent on minimizing the risk of crop failure would be expected to plant about 65\% barley to 35\% wheat on average. This proportion is within the range estimated from macrobotanical remains at a nearby archaeological site [@Marston2011190]. Yield maximizing farmers instead play a pure strategy profile, planting wheat if the perceived drought risk is less than 0.68 and barley if it is more. Because the GCM-simulated drought risk never rises above this threshold, a yield-maximizing farmer will always plant a wheat monocrop.
+
+
+Examining the long-term dynamics of crop yields among all decision-making strategies and psychological profiles reveals variability in yields due to different decision making preferences is far greater variability due to differences in risk perception (Figure 7). Risk-minimizing strategies sacrifice productivity for predictability, consistently lowering the mean and variance of crop yields over time. Risk-minimizing strategies are more sensitive to risk perception than yield-maximizing strategies; varying the memory decay rate parameter $\lambda$ had no effect on the optimal crop allocation for yield maximizers. 
+
+During periods of climatic stability, allowing past experiences to influence decision making helps farmers minimize the impacts of \emph{predictable} drought. But past experiences are less informative during periods of rapid climate change, and even farmers who manage risk “optimally” experience major food shortfalls. Climatically-induced variability in food supplies consistently surpasses that from differences in risk-perception psychology, but not that from different risk aversion preferences. This finding suggests that the efficacy of risk managing strategies that rely on regulatory feedbacks is limited to periods of relative climatic stability. This is consistent with the observation from the Roman Period Mediterranean that while minor food crises were common in the ancient world, extreme famines were rare [@Garnsey1989].
+
+Statistically downscaling palaeoclimate simulations and coupling them to game theoretic models of decision making under uncertainty is a simple way to better understand the patterning of climate changes and the regulatory feedbacks farmers use to adapt to them. To further explore these patterns, future work should incorporate additional risk-minimizing strategies such as storage and exchange. Food storage and exchange can also be thought of as forms of diversification, the former in the time and the latter in space [@Marston2011190]. Food exchange would be of particular interest from a game theoretic perspective, as incomplete information with respect to an exchange partner's crop diversification and storage practices can lead to situations of moral hazard.
+
+
+Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
+
+
+# References
+
+```{r}
+knitr::knit_exit()
+```
+
 ```{r}
 agents2 <- agents %>%
   select(id) %>%
@@ -532,46 +570,6 @@ moran_birth_death <- function(agents, r = 1) {
 
 reduce(1:1000, ~moran_birth_death(., r = 4), .init = agents2) %>%
   pull(age) %>%hist
-```
-
-```{r}
-load('../Silvanus/R/sysdata.rda')
-life_table
-fertility_shape <- 4.579627
-fertility_scale <- 0.1
-survivor_scale <- 0.1
-```
-
-```{r}
-reproduce <- function(individuals, food_ratio = 0.7) {
-  individuals %>%
-    left_join(life_table, by = 'age') %>% 
-    mutate(fertility_reduction = pgamma(food_ratio, shape = fertility_shape, scale = fertility_scale),
-           reproduced = rbernoulli(n(), fertility_rate / 2 * fertility_reduction)) %>% # divide by two to make everyone female
-    filter(reproduced == TRUE) %>% # if nrows == 0, will give a (for some reason unsuppressible) warning
-    tally %>% # count births per household
-    uncount(n) %>% # repeat rows based on birth count per household
-    mutate(age = 0) %>%
-    bind_rows(individuals, .) %>%
-    ungroup # check for filled na's here?
-}
-
-
-die <- function(individuals, food_ratio = 0.7) {
-  individuals %>%
-        left_join(life_table, by = 'age') %>% 
-    mutate(survival_reduction = pgamma(pmin(1, food_ratio), shape = survival_shape, scale = survivor_scale),
-           survived = rbernoulli(n(), survival_rate * survival_reduction)) %>%
-    filter(survived == TRUE) %>%
-    select(-c(fertility_rate:survived)) %>%
-    mutate(age = age + 1)
-}
-
-```
-
-```{r}
-reduce(1:600, ~reproduce(.x) %>% die , .init = agents2 %>% mutate(age = sample.int(80, size = 150, replace = TRUE))) %>%
-  pull(age) %>% hist
 ```
 
 
