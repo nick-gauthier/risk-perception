@@ -446,66 +446,54 @@ Now incorporate realistic drought variability from simulations.
 
 ```{r}
 konya <- matrix(c(32.5, 37.9), nrow = 1)
-
-
-sim_present <- brick('~/Downloads/b40.20th.track1.1deg.005.cam2.h0.PRECT.185001-200512.nc') %>%
-  raster::extract(konya, df = TRUE) %>%
-  select(-ID) %>%
-  gather(time, rainfall) %>%
-  mutate(rainfall = rainfall * 2.628e+9,
-         year = rep(1850:2005, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
-         month = rep(1:12, times = 156)) %>%
-  select(-time) %>%
-  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
-  filter(between(water_year, 1932, 2005)) %>%
-   filter(!(month %in% c(6:9))) %>%
-  group_by(water_year) %>%
-  summarise(precip = sum(rainfall))
-
-sim_past <- brick('~/Downloads/b40.mh6ka.1deg.003.cam2.h0.PRECT.080101-131612.nc') %>% 
-  raster::extract(konya, df = TRUE) %>%
-  select(-ID) %>%
-  gather(time, rainfall) %>%
-  mutate(rainfall = rainfall * 2.628e+9,
-         year = rep(1:516, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
-         month = rep(1:12, times = 516)) %>%
-  select(-time) %>%
-  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
-   filter(!(month %in% c(6:9))) %>%
-  group_by(water_year) %>%
-  summarise(precip = sum(rainfall))
+konya <- matrix(c(33.5138, 36.2765), nrow = 1)
 ```
 
 ```{r}
-obs <- read_table('~/Downloads/pa17244.dat', 
-           comment = "#", 
-           col_names = c('year', 1:12), 
-           na = c('-999.9', '-888.8')) %>%
-  gather(month, precip, `1`:`12`) %>%
-  group_by(month) %>%
-  mutate(precip = if_else(is.na(precip), mean(precip, na.rm = TRUE), precip)) %>%
-  ungroup %>%
-  mutate(month = as.numeric(month),
-         water_year = if_else(month %in% 10:12, year + 1, year)) %>% 
-    filter(between(water_year, 1932, 2005)) %>%
- filter(!(month %in% c(6:9))) %>%
+precc <- map(list.files('Data/PRECC', full.names = TRUE)[-12],
+             ~brick(.) %>%
+               raster::extract(konya, df = TRUE) %>%
+  select(-ID) %>%
+  gather(time, precc) ) %>%
+  bind_rows()
+precl <- map(list.files('Data/PRECL', full.names = TRUE)[-12],
+             ~brick(.) %>%
+               raster::extract(konya, df = TRUE) %>%
+  select(-ID) %>%
+  gather(time, precl) ) %>%
+  bind_rows()
+
+sim_past <- left_join(precc, precl) %>%
+  mutate(rainfall = (precc + precl) * 2.628e+9,
+         year = rep(-10200:-5001, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
+         month = rep(1:12, times = 5200)) %>%
+  select(-time, -precl, -precc) %>%
+  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
+  # filter(!(month %in% c(6:9))) %>%
   group_by(water_year) %>%
-  summarise(precip = sum(precip))
+  add_tally() %>%
+filter(n == 12) %>%
+  summarise(precip = sum(rainfall))
+
+plot(sim_past)
 ```
 
+
 ```{r}
-obs_past <- CDFt(obs$precip, sim_present$precip, sim_past$precip)$DS
+plot(sim_past)
+```
 
-plot(obs_past)
 
-tibble(droughts = (obs_past < 250)[1:500]) %>%
-  mutate(time = rep(1:20, each = 25))%>%
+
+```{r}
+tibble(droughts = (sim_past[1:5150, 2] < 250)) %>%
+  mutate(time = rep(1:206, each = 25))%>%
   group_by(time) %>%
   summarise(test = sum(droughts)/25)
 ```
 
 ```{r}
-simulation <- accumulate((obs_past < 250), ~learn(.x, .y), .init = agents) %>% 
+simulation <- accumulate((sim_past$precip < 300), ~learn(.x, .y), .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
