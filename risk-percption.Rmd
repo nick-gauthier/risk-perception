@@ -511,21 +511,20 @@ ggplot(simulation, aes(time, risk)) +
 
 so in this case drought risk is low enough all the time you never get any diversification
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-maximax
+moran_birth_death <- function(agents, r = 1) {
 ```{r}
-risk <- 0.9
-wheat_exp <- wheat_wet * (1 - risk) + wheat_dry * risk
-barley_exp <- barley_wet * (1 - risk) + barley_dry * risk
-obj.fun <- c(wheat_exp, barley_exp)
+load('../Silvanus/R/sysdata.rda')
+life_table
+fertility_shape <- 4.579627
+fertility_scale <- 0.1
 
-constr=matrix(c(1,1,1,0,0,1, wheat_exp, barley_exp),ncol = 2, byrow = TRUE) #Loading the constraints
-constr.dir=c("=",">=",">=", ">=")
-constr.rhs=c(1,0,0, .5)
+die <- function(individuals, food_ratio = 0.7) {
+  individuals %>%
+        left_join(life_table, by = 'age') %>% 
 
-mod=lp("min",obj.fun,constr,constr.dir,constr.rhs) #Using lp() to solve our problem
-mod$solution
+```{r}
+reduce(1:600, ~reproduce(.x) %>% die , .init = agents2 %>% mutate(age = sample.int(80, size = 150, replace = TRUE))) %>%
 ```
 
 ## Satisficing learners
