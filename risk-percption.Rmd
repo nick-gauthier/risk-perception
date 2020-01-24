@@ -408,7 +408,7 @@ reproduce <- function(individuals, food_ratio = 0.7) {
     filter(reproduced == TRUE) %>% # if nrows == 0, will give a (for some reason unsuppressible) warning
     tally %>% # count births per household
     uncount(n) %>% # repeat rows based on birth count per household
-    mutate(age = 0) %>%
+    mutate(age = 0, alpha = 1.5, beta = 1.5, risk = alpha / (alpha + beta)) %>%
     bind_rows(individuals, .) %>%
     ungroup # check for filled na's here?
 }
@@ -426,7 +426,7 @@ die <- function(individuals, food_ratio = 0.7) {
 
 ```
 
-
+Ok so next we need to have the birth and death stuff run with all the prior information in it. dont need to propogate the prior exactly, just need to add in a new weak prior. at least propogate the risk number, but not the prior?
 ```{r}
 reduce(1:600, ~reproduce(.x) %>% die , .init = agents2 %>% mutate(age = sample.int(80, size = 150, replace = TRUE))) %>%
   pull(age) %>% hist
