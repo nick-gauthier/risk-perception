@@ -446,7 +446,7 @@ Now incorporate realistic drought variability from simulations.
 
 ```{r}
 konya <- matrix(c(32.5, 37.9), nrow = 1)
-konya <- matrix(c(33.5138, 36.2765), nrow = 1)
+#konya <- matrix(c(33.5138, 36.2765), nrow = 1)
 ```
 
 ```{r}
@@ -469,31 +469,33 @@ sim_past <- left_join(precc, precl) %>%
          month = rep(1:12, times = 5200)) %>%
   select(-time, -precl, -precc) %>%
   mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
-  # filter(!(month %in% c(6:9))) %>%
+   filter(!(month %in% c(6:9))) %>%
   group_by(water_year) %>%
   add_tally() %>%
-filter(n == 12) %>%
-  summarise(precip = sum(rainfall))
-
-plot(sim_past)
+filter(n == 8) %>%
+  summarise(precip = sum(rainfall)) %>%
+  mutate(drought = precip < 300)
 ```
 
 
-```{r}
-plot(sim_past)
+```{r, fig.height =3, fig.width = 9}
+sim_past %>%
+  filter(between(water_year, -9500, -5500)) %>%
+  mutate(time_step = ceiling(water_year / 50),
+         year = time_step * 50) %>%
+  group_by(year) %>%
+  summarise(risk = sum(drought) / 50) %>%
+  ggplot(aes(year, risk, fill = risk, color = risk)) +
+  geom_hline(yintercept = indiff$risk, color = 'black', linetype = 2, width = 1.2) +
+  geom_col()  +
+  scale_fill_distiller(palette = 'YlOrRd', direction = 1) +
+  scale_color_distiller(palette = 'YlOrRd', direction = 1)+
+  theme_minimal() +
+  labs(x = 'Years BP', y = 'Drought risk')  + theme(legend.position = "none")
 ```
 
-
-
 ```{r}
-tibble(droughts = (sim_past[1:5150, 2] < 250)) %>%
-  mutate(time = rep(1:206, each = 25))%>%
-  group_by(time) %>%
-  summarise(test = sum(droughts)/25)
-```
-
-```{r}
-simulation <- accumulate((sim_past$precip < 300), ~learn(.x, .y), .init = agents) %>% 
+simulation <- accumulate(sim_past$drought, ~learn(.x, .y), .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
