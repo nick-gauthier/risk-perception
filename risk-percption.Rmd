@@ -48,8 +48,8 @@ barley_dry <- 0.93
 barley_normal <- 1.18
 ```
 
-```{r}
-readxl::read_xls('41467_2014_BFncomms4953_MOESM580_ESM.xls', range = 'A2:O370') %>%
+```{r, eval = FALSE}
+readxl::read_xls('Data/41467_2014_BFncomms4953_MOESM580_ESM.xls', range = 'A2:O370') %>%
   select(`Site Location`, Taxon, `ky cal BP`, `GY (t*ha-1)`) %>%
   filter(!is.na(`GY (t*ha-1)`)) %>% 
   group_by(`Site Location`, Taxon) %>%
@@ -116,7 +116,7 @@ expected_yield <- function(risk) {
 ```
 
 Given these payoffs, what's the point of indifference between the two crop types?
-```{r, echo = FALSE, fig.cap=title = 'Expected wheat and barley yields under increasing drought risk with the point of indifference highlighted.'}
+```{r, echo = FALSE, fig.cap = 'Expected wheat and barley yields under increasing drought risk with the point of indifference highlighted.'}
 indiff <- tibble(risk = (barley_normal - wheat_normal) / (wheat_dry - wheat_normal - barley_dry + barley_normal),
                  yield = risk * wheat_dry + (1 - risk) * wheat_normal)
 indiff_label <- paste0('(', round(indiff$risk, 2), ', ', round(indiff$yield, 2), ')')
@@ -184,7 +184,9 @@ Start with a population of agents with the same subjective beliefs about drought
 agents <- tibble(id = 1:150, 
                  alpha = 1.5,
                  beta = 1.5,
-                 risk = alpha / (alpha + beta))
+                 risk = alpha / (alpha + beta),
+                 age = sample.int(80, size = 150, replace = TRUE),
+                 crop = 'barley')
 ```
 
 
@@ -274,7 +276,7 @@ Similar to above, but satisficing
 ```{r}
 learn_satisficing <- function(agents, drought, aspiration) {
   if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
-  if (drought == 'FALSE') wheat_yield <- wheat_wet; barley_yield <- barley_wet
+  if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
   
   agents %>%
      mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
@@ -291,7 +293,7 @@ droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
 ```
 
 ```{r}
-simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
+simulation1 <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
@@ -299,42 +301,85 @@ simulation <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>%
 
 
 ```{r, echo = TRUE}
-ggplot(simulation, aes(time, risk)) +
+ggplot(simulation1, aes(time, risk)) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
   theme_classic()
 ```
 
-```{r, echo = TRUE}
-simulation %>%
+```{r}
+simulation2 <- accumulate(droughts, ~learn(.x, .y) %>% reproduce %>% die, .init = agents) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+```
+
+```{r}
+ggplot(simulation2, aes(time, risk)) +
+  geom_point(alpha = .1) +
+  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic()
+```
+
+```{r}
+simulation1 %>%
   group_by(time, crop) %>%
   tally() %>%
 ggplot(aes(time, n, fill = crop)) +
-  geom_bar(width = 1, stat = 'identity') +
+  geom_bar(width = 1, stat = 'identity', position = 'fill') +
+  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
+  theme_classic()
+```
+
+```{r}
+simulation2 %>%
+  group_by(time, crop) %>%
+  tally() %>%
+ggplot(aes(time, n, fill = crop)) +
+  geom_bar(width = 1, stat = 'identity', position = 'fill') +
   scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
   theme_classic()
 ```
 
 These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
+
+Note in these plots above and below we're summing all the wheat and barley in the population, compared to below which shows the wheat proportions of individuals
 ```{r}
-ggplot(simulation, aes(time, wheat_prop)) +
+ggplot(simulation1, aes(time, wheat_prop)) +
+  geom_point(alpha = .3) +
+  theme_classic()
+
+ggplot(simulation2, aes(time, wheat_prop)) +
   geom_point(alpha = .3) +
   theme_classic()
 ```
 
 ```{r}
-simulation %>%
+simulation1 %>%
   group_by(time) %>%
-  summarise(famine = sum(payoff < .1)) %>%
+  summarise(famine = sum(payoff == 0)) %>%
+ggplot(aes(time, famine)) +
+  geom_line() +
+  theme_classic()
+simulation2 %>%
+  group_by(time) %>%
+  summarise(famine = sum(payoff == 0, na.rm = TRUE)) %>%
 ggplot(aes(time, famine)) +
   geom_line() +
   theme_classic()
 ```
 
 ```{r}
-simulation %>%
+simulation1 %>%
   group_by(time) %>%
   summarise(payoff = mean(payoff)) %>%
+ggplot(aes(time,payoff)) +
+  geom_point(aes(color = time)) +
+  theme_classic()
+
+simulation2 %>%
+  group_by(time) %>%
+  summarise(payoff = mean(payoff, na.rm = TRUE)) %>%
 ggplot(aes(time,payoff)) +
   geom_point(aes(color = time)) +
   theme_classic()
@@ -342,10 +387,17 @@ ggplot(aes(time,payoff)) +
 
 ```{r}
 library(ggridges)
-simulation %>%
+simulation1 %>%
   mutate(time_step = 5 * round(time/5),
          famine = payoff == 0) %>%
-  ggplot(aes(famine, as.factor(time_step))) +
+  ggplot(aes(wheat_prop, as.factor(time_step))) +
+  geom_density_ridges(rel_min_height = 0.005) +
+  theme_ridges()
+
+simulation2 %>%
+  mutate(time_step = 5 * round(time/5),
+         famine = payoff == 0) %>%
+  ggplot(aes(wheat_prop, as.factor(time_step))) +
   geom_density_ridges(rel_min_height = 0.005) +
   theme_ridges()
 ```
@@ -382,7 +434,7 @@ tibble(drought = droughts,
 test3 <- tibble(agent = 1:100) %>%
   mutate(wheat_prop = round(runif(n()), 2))
 
-simulation2 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .5), .init = test3) %>% 
+simulation3 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .5), .init = test3) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
@@ -400,24 +452,24 @@ survivor_scale <- 0.1
 ```
 
 ```{r}
-reproduce <- function(individuals, food_ratio = 0.7) {
+reproduce <- function(individuals) {
   individuals %>%
     left_join(life_table, by = 'age') %>% 
-    mutate(fertility_reduction = pgamma(food_ratio, shape = fertility_shape, scale = fertility_scale),
+    mutate(fertility_reduction = pgamma(payoff, shape = fertility_shape, scale = fertility_scale),
            reproduced = rbernoulli(n(), fertility_rate / 2 * fertility_reduction)) %>% # divide by two to make everyone female
     filter(reproduced == TRUE) %>% # if nrows == 0, will give a (for some reason unsuppressible) warning
     tally %>% # count births per household
     uncount(n) %>% # repeat rows based on birth count per household
-    mutate(age = 0, alpha = 1.5, beta = 1.5, risk = alpha / (alpha + beta)) %>%
+    mutate(age = 0, alpha = 1.5, beta = 1.5, risk = alpha / (alpha + beta), crop = 'barley') %>%
     bind_rows(individuals, .) %>%
     ungroup # check for filled na's here?
 }
 
 
-die <- function(individuals, food_ratio = 0.7) {
+die <- function(individuals) {
   individuals %>%
         left_join(life_table, by = 'age') %>% 
-    mutate(survival_reduction = pgamma(pmin(1, food_ratio), shape = survival_shape, scale = survivor_scale),
+    mutate(survival_reduction = pgamma(pmin(1, payoff), shape = survival_shape, scale = survivor_scale),
            survived = rbernoulli(n(), survival_rate * survival_reduction)) %>%
     filter(survived == TRUE) %>%
     select(-c(fertility_rate:survived)) %>%
@@ -428,7 +480,7 @@ die <- function(individuals, food_ratio = 0.7) {
 
 Ok so next we need to have the birth and death stuff run with all the prior information in it. dont need to propogate the prior exactly, just need to add in a new weak prior. at least propogate the risk number, but not the prior?
 ```{r}
-reduce(1:600, ~reproduce(.x) %>% die , .init = agents2 %>% mutate(age = sample.int(80, size = 150, replace = TRUE))) %>%
+reduce(1:600, ~reproduce(.x) %>% die , .init = agents) %>%
   pull(age) %>% hist
 ```
 
@@ -482,7 +534,7 @@ filter(n == 8) %>%
 ```
 
 
-```{r, fig.height =3, fig.width = 9}
+```{r, fig.height =3, fig.width = 9, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by century.'}
 sim_past %>%
   filter(between(water_year, -9500, -5500)) %>%
   mutate(time_step = ceiling(water_year / 50),
@@ -499,19 +551,33 @@ sim_past %>%
 ```
 
 ```{r}
-simulation <- accumulate(sim_past$drought, ~learn(.x, .y), .init = agents) %>% 
+simulation4 <- accumulate(sim_past$drought, ~learn(.x, .y) %>% reproduce %>% die, .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
 ```
 
-
+So the problem now is the population dynamics are getting in the way ... and that it'd be nice to have something akin to the moran process to ensure fixed population
 ```{r, echo = TRUE}
-ggplot(simulation, aes(time, risk)) +
+ggplot(simulation4, aes(time, risk)) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
   theme_classic()
 ```
+
+```{r}
+simulation4 %>%
+  group_by(time) %>%
+  tally %>%
+  plot
+```
+
+so we have to connect the food ratio to the payoffs? maybe have the barley yield be ~ .8 food ratio
+
+```{r}
+.5/.8
+```
+
 
 \section{Results and Discussion}
 
@@ -524,9 +590,6 @@ ggplot(simulation, aes(time, risk)) +
 The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
 
 The risk of crop failure due to drought in any given year varies between 10\% and 20\%, punctuated by one to four century-long events where risk drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high drought risk cluster around known periods of regional and global climate deterioration, such as at 8.6ka BP and 4.2ka BP.
-
-![Annual risk of wheat crop failure due to drought, averaged by century.](figures/wheatrisk.png)
-
 
 Given the average drought risks estimated from TraCE-21k and assuming perfect monitoring and recall of recent droughts (i.e. $\lambda = 0$), farmers intent on minimizing the risk of crop failure would be expected to plant about 65\% barley to 35\% wheat on average. This proportion is within the range estimated from macrobotanical remains at a nearby archaeological site [@Marston2011190]. Yield maximizing farmers instead play a pure strategy profile, planting wheat if the perceived drought risk is less than 0.68 and barley if it is more. Because the GCM-simulated drought risk never rises above this threshold, a yield-maximizing farmer will always plant a wheat monocrop.
 
@@ -548,11 +611,6 @@ knitr::knit_exit()
 ```
 
 ```{r}
-agents2 <- agents %>%
-  select(id) %>%
-  mutate(age = 1)
-
-
 moran_birth_death <- function(agents, r = 1) {
   n <- nrow(agents)
   birth_index <- sample.int(n, size = r)
@@ -661,76 +719,7 @@ test %>%
 ```
 
 
-```{r}
-farm <- function(households){
-  households %>%
-    mutate(yield = climatic_yield, #* n_inhabitants ^ labor_elasticity,
-           yield_memory = yield, #map2(yield_memory, yield, remember),
-           harvest = land * yield * .5 - land * sowing_rate) #%>%  # *.5 is for fallow
-  #select(-yield)
-}
-
-
-remember <- function(yield_memory, yield){
-  # rnorm(1, yield, yield * 0.0333) %>%  #memory is fuzzy
-  append(yield_memory[-length(yield_memory)], yield, after = 0) # remove the last entry in the vector and add new yield to the begining
-}
-
-
-#Agents use the peak-end rule when accessing memory.
-peak_end <- function(x){
-  map_dbl(x, ~mean(c(.x[1], min(.x))))
-}
-
-```
 
 
 
-
-```{r}
-obs.na <- read.csv('salihli_p.csv')[10:620, 5]  / 10  # raw data in mm*10. subset time series as water years (i.e. first observation is october, last is september)
-
-get.winter <- function(x){seq(0, length(x) - 12, 12) %>%
-    sapply(function(y) y + 1:6) %>%
-    as.numeric %>% extract(x, .)}# function to get Oct-Mar values from
-obs<- obs.na %>% 
-  rev %>% 
-  na.locf %>% 
-  rev %>% 
-  `+`(na.locf(obs.na)) %>% 
-  `/`(2) %>%  # fill NA with avg of adjacent values
-  get.winter
-
-# Now import TraCE-21k GCM data. Extract a time series for the grid cell covering the Salihli weather station. Add the model-output convective and large-scale precipitation variables to get total precipitation. Convert from m/s to mm/month. Subset time series to the calibration period (10 BP - AD 1940) and prediction period (10000 BP - 11 BP).
-
-salihli.pt <- c(28.14, 38.48) %>% matrix(nrow = 1) %>% SpatialPoints  # create a point in Salihli to extract data from GCM
-
-pc <- list.files('GCM Data/PRECC', full.names = T) %>%  # get a list of all GCM output files
-  lapply(brick) %>%                                 # import GCM files as raster bricks
-  lapply(., raster::extract,salihli.pt) %>%                  # extract series from the grid cell containing Salihli
-  unlist                                            # combine into a single vector
-
-pl <- list.files('GCM Data/PRECL', full.names = T) %>%  # get a list of all GCM output files
-  lapply(brick) %>%                                 # import GCM files as raster bricks
-  lapply(., raster::extract,salihli.pt) %>%                  # extract series from the grid cell containing Salihli
-  unlist                                            # combine into a single vector
-
-pt <- pc %>% add(pl) %>% multiply_by(60 * 60 * 24 * 30 * 1000)  # add precip components and convert from m/s to mm/month
-
-cal <- pt %>% extract(122278:122877) %>% get.winter
-
-pred <- pt %>% extract(2398:122397) %>% get.winter
-
-pred.byfifty <- pred %>% seq_along %>% divide_by(300) %>% ceiling %>% split(pred,.)
-
-calc.cdf <- function(x){
-  pred <- x
-  ct <- CDFt(obs, cal, pred)
-  ct$DS
-}
-monthly.recon <- lapply(pred.byfifty, calc.cdf) %>% unlist
-annual.recon <- monthly.recon %>% seq_along %>% divide_by(6) %>% ceiling %>% split(monthly.recon,.) %>%
-  lapply(sum) %>% unlist %>% data.frame(date = seq(-10000,-1,1), p = ., color = cut(., c(0,200,300, 800)))
-
-```
 
