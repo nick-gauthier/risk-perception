@@ -181,7 +181,7 @@ where $t$ is the current time step. The 50 year time span was selected to approx
 Start with a population of agents with the same subjective beliefs about drought risk.
 
 ```{r}
-agents <- tibble(id = 1:100, 
+agents <- tibble(id = 1:150, 
                  alpha = 1.5,
                  beta = 1.5,
                  risk = alpha / (alpha + beta))
@@ -509,23 +509,75 @@ ggplot(simulation, aes(time, risk)) +
   theme_classic()
 ```
 
-so in this case drought risk is low enough all the time you never get any diversification
+```{r}
+agents2 <- agents %>%
+  select(id) %>%
+  mutate(age = 1)
 
 
 moran_birth_death <- function(agents, r = 1) {
+  n <- nrow(agents)
+  birth_index <- sample.int(n, size = r)
+  death_index <- sample.int(n, size = r)
+  newborn <- agents %>%
+    filter(row_number() %in% birth_index) %>%
+    mutate(age = 1)
+  
+  agents %>%
+    filter(!row_number() %in% death_index) %>%
+    mutate(age  = age + 1) %>%
+    bind_rows(newborn)
+}
+
+
+reduce(1:1000, ~moran_birth_death(., r = 4), .init = agents2) %>%
+  pull(age) %>%hist
+```
+
 ```{r}
 load('../Silvanus/R/sysdata.rda')
 life_table
 fertility_shape <- 4.579627
 fertility_scale <- 0.1
+survivor_scale <- 0.1
+```
+
+```{r}
+reproduce <- function(individuals, food_ratio = 0.7) {
+  individuals %>%
+    left_join(life_table, by = 'age') %>% 
+    mutate(fertility_reduction = pgamma(food_ratio, shape = fertility_shape, scale = fertility_scale),
+           reproduced = rbernoulli(n(), fertility_rate / 2 * fertility_reduction)) %>% # divide by two to make everyone female
+    filter(reproduced == TRUE) %>% # if nrows == 0, will give a (for some reason unsuppressible) warning
+    tally %>% # count births per household
+    uncount(n) %>% # repeat rows based on birth count per household
+    mutate(age = 0) %>%
+    bind_rows(individuals, .) %>%
+    ungroup # check for filled na's here?
+}
+
 
 die <- function(individuals, food_ratio = 0.7) {
   individuals %>%
         left_join(life_table, by = 'age') %>% 
+    mutate(survival_reduction = pgamma(pmin(1, food_ratio), shape = survival_shape, scale = survivor_scale),
+           survived = rbernoulli(n(), survival_rate * survival_reduction)) %>%
+    filter(survived == TRUE) %>%
+    select(-c(fertility_rate:survived)) %>%
+    mutate(age = age + 1)
+}
+
+```
 
 ```{r}
 reduce(1:600, ~reproduce(.x) %>% die , .init = agents2 %>% mutate(age = sample.int(80, size = 150, replace = TRUE))) %>%
+  pull(age) %>% hist
 ```
+
+
+so in this case drought risk is low enough all the time you never get any diversification
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Satisficing learners
 
