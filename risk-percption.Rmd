@@ -48,14 +48,7 @@ barley_dry <- 0.93
 barley_normal <- 1.18
 ```
 
-```{r, eval = FALSE}
-readxl::read_xls('Data/41467_2014_BFncomms4953_MOESM580_ESM.xls', range = 'A2:O370') %>%
-  select(`Site Location`, Taxon, `ky cal BP`, `GY (t*ha-1)`) %>%
-  filter(!is.na(`GY (t*ha-1)`)) %>% 
-  group_by(`Site Location`, Taxon) %>%
-  summarise(yield_mean = mean(`GY (t*ha-1)`)) %>%
-  spread(Taxon, yield_mean)
-```
+
 
 
 Optimal wheat/barley proportions can be calculated using two different objective functions representing different decision making types of farmers. 
@@ -177,6 +170,67 @@ Given the modeled patterns of wet and dry years, drought risk for any particular
 \end{equation} 
 where $t$ is the current time step. The 50 year time span was selected to approximate the accumulated observational knowledge of an individual farmer and their immediate household. As a result, this approach does not allow for accumulated social learning, although it could easily be extended to do so in future studies.
 
+## Climate Modeling and Bias Correction
+
+Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research's Earth System Grid repository (https://www.earthsystemgrid.org). TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to orbital parameters and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present (Figure 2) [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of climate forcings (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
+
+TraCE-21k simulation outputs for the past 10,000 years were bias-corrected using the CDF-t method and observed precipitation from a weather station in near the town of Salihli in western Turkey. This location was selected due to its long (~70yr) observational record, the representativeness of western Anatolian climate for the greater eastern Mediterranean, and its proximity to archaeological sites with comparative evidence of crop diversification strategies.
+
+
+Now incorporate realistic drought variability from simulations.
+
+
+```{r}
+konya <- matrix(c(32.5, 37.9), nrow = 1)
+#konya <- matrix(c(33.5138, 36.2765), nrow = 1)
+```
+
+```{r}
+precc <- map(list.files('Data/PRECC', full.names = TRUE)[-12],
+             ~brick(.) %>%
+               raster::extract(konya, df = TRUE) %>%
+  select(-ID) %>%
+  gather(time, precc) ) %>%
+  bind_rows()
+precl <- map(list.files('Data/PRECL', full.names = TRUE)[-12],
+             ~brick(.) %>%
+               raster::extract(konya, df = TRUE) %>%
+  select(-ID) %>%
+  gather(time, precl) ) %>%
+  bind_rows()
+
+sim_past <- left_join(precc, precl) %>%
+  mutate(rainfall = (precc + precl) * 2.628e+9,
+         year = rep(-10200:-5001, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
+         month = rep(1:12, times = 5200)) %>%
+  select(-time, -precl, -precc) %>%
+  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
+   filter(!(month %in% c(6:9))) %>%
+  group_by(water_year) %>%
+  add_tally() %>%
+filter(n == 8) %>%
+  summarise(precip = sum(rainfall)) %>%
+  mutate(drought = precip < 300)
+```
+
+
+```{r, fig.height =3, fig.width = 9, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period'}
+sim_past %>%
+  filter(between(water_year, -9500, -5500)) %>%
+  mutate(time_step = ceiling(water_year / 50),
+         year = time_step * 50) %>%
+  group_by(year) %>%
+  summarise(risk = sum(drought) / 50) %>%
+  ggplot(aes(year, risk, fill = risk, color = risk)) +
+  geom_hline(yintercept = indiff$risk, color = 'black', linetype = 2, width = 1.2) +
+  geom_col()  +
+  scale_fill_distiller(palette = 'YlOrRd', direction = 1) +
+  scale_color_distiller(palette = 'YlOrRd', direction = 1)+
+  theme_minimal() +
+  labs(x = 'Years BP', y = 'Drought risk')  + theme(legend.position = "none")
+```
+
+
 
 Start with a population of agents with the same subjective beliefs about drought risk.
 
@@ -197,57 +251,28 @@ agents
 ## Bayesian Updating
 
 ```{r}
-prior <- function(m,n){
-a = n * m
-b = n * (1 - m)
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
+prior <- function(m, n) {
+  domain <- seq(0,1,0.005)
+  val <- dbeta(domain, n * m, n * (1 - m))
+  tibble('x' = domain, 'y' = val)
 }
 
-tibble(year = 1:20,
+tibble(year = seq(5, 50, 5),
        risk = .5) %>%
   mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
-  geom_line() +
-  facet_wrap( ~year) +
+  geom_line(aes(group = year, color = year), size = 1.2) +
+  scale_color_viridis_c() +
   theme_bw() +
   ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
-
-#prior(.5, ) %>% plot
 ```
 
-```{r}
-likelihood <- function(N,Y){
-a <- Y + 1
-b <- N - Y + 1
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-#likelihood(1, 1)%>% plot
-```
-
-```{r}
-posterior <- function(m,n,N,Y){
-a <- Y + (n*m) -1
-b <- N - Y + (n*(1-m)) - 1
-dom <- seq(0,1,0.005)
-val <- dbeta(dom,a,b)
-return(data.frame('x'=dom, 'y'=val))
-}
-
-#dbeta(seq(0,1,0.005), -1, 0)
-#prior(.5, 2) %>% plot
-#posterior(.5, 3, 1, 1) %>% plot
-```
 
 Allow the agents to learn the drought risk over time. Also need to calculate the actual payoffs for each agent.
 
 ```{r}
-learn <- function(agents, drought) {
+learn1 <- function(agents, drought) {
   if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
   if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
 
@@ -267,44 +292,96 @@ learn <- function(agents, drought) {
     mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
            alpha = drought + alpha,
            beta = beta + 1 - drought,
-           mu = alpha / (alpha + beta),
+          # mu = alpha / (alpha + beta),
+           risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
+}
+
+learn2 <- function(agents, drought) {
+  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
+  if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
+
+  agents %>%
+    # farmer's turn to decide what to plant
+      mutate(yield_exp = expected_yield(risk),
+         barley_exp = expected_yield_barley(risk),
+         wheat_exp = expected_yield_wheat(risk),
+         expected_yield = barley_exp + wheat_exp,
+         crop = case_when(barley_exp > wheat_exp ~ 'barley',
+                              barley_exp < wheat_exp ~ 'wheat',
+                              barley_exp == wheat_exp ~ 'either'),
+         prediction = map2(alpha, beta, ~rbeta(100, .x, .y)), # sample 100 as if agent is thinking in percentages
+         wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
+      select(-prediction) %>%
+  # nature's turn to decide realized yields
+    mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
+           alpha = if_else(payoff < .5, 1, drought + alpha),
+           beta = if_else(payoff < .5, 1, beta + 1 - drought),
+          # mu = alpha / (alpha + beta),
            risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
 }
 ```
 
-Similar to above, but satisficing
-```{r}
-learn_satisficing <- function(agents, drought, aspiration) {
-  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
-  if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
-  
-  agents %>%
-     mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
-            new_prop = round(runif(n()), 2),
-           wheat_prop = if_else(payoff > aspiration, wheat_prop, new_prop)) %>%
-    select(-new_prop)
-}
-```
 
-
-Run an experiment. Simulate a time series with varying drought frequency.
+Run an experiment. Simulate a time series with varying drought frequency. This is a stepwise nonstationary process
 ```{r}
 droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
 ```
 
 ```{r}
-simulation1 <- accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
+prior2 <- function(a, b) {
+  domain <- seq(0,1,0.005)
+  val <- dbeta(domain, a, b)
+  tibble('x' = domain, 'y' = val)
+}
+
+plot(prior2( 0, 0));plot(prior2( .5, .5));plot(prior2( 1, 1))
+
+accumulate(droughts, 
+           ~mutate(.x, alpha = .y + alpha, beta = beta + 1 - .y), 
+           .init = tibble(alpha = 1.5, beta = 1.5)) %>%
+  bind_rows(.id = 'time') %>%
+    mutate(time = as.numeric(time), belief = map2(alpha, beta, ~prior2(.x, .y))) %>%
+  unnest(cols = c(belief)) %>%
+  ggplot(aes(x, y)) +
+  geom_line(aes(color = time, group = time), size = .8) +
+    geom_vline(xintercept = c(0.1, 0.5, 0.2), linetype = 2, color = 'red', size = .8) +
+  scale_color_viridis_c() +
+  theme_bw() +
+  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
+```
+
+```{r}
+simulation1 <- accumulate(droughts, ~learn1(.x, .y), .init = agents) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+
+simulation2 <- accumulate(droughts, ~learn2(.x, .y), .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
 ```
 
+Redo these plots so its a single person, one who was born in a drought period then experiences an ameliorarion and another who experiences a shift to drought conditions later in life? basically this section neds to work more with individuals and explore that stuff
 
 ```{r, echo = TRUE}
+test1 <- tibble(time = 1:100,
+       risk = c(rep(0.1, 25), rep(0.5, 25), rep(0.2, 50)))
+
 ggplot(simulation1, aes(time, risk)) +
+  geom_line(data = test1) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
   theme_classic()
+```
+
+```{r}
+ggplot(simulation2, aes(time, risk)) +
+  geom_line(data = test1) +
+  geom_point(alpha = .1) +
+  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic()
+
 ```
 
 ```{r}
@@ -405,6 +482,7 @@ simulation2 %>%
 
 
 
+
 make this a function to calculate payoffs for all wheat or all barley strategies as a comparison
 ```{r}
 tibble(drought = droughts,
@@ -430,18 +508,6 @@ tibble(drought = droughts,
 ```
 
 
-```{r}
-test3 <- tibble(agent = 1:100) %>%
-  mutate(wheat_prop = round(runif(n()), 2))
-
-simulation3 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .5), .init = test3) %>% 
-  bind_rows(.id = 'time') %>%
-  mutate(time = as.numeric(time)) %>%
-  filter(time != 1)
-  
-simulation2 %>% ggplot(aes(as.numeric(time), payoff, group = agent)) + geom_point(alpha = .2)
-simulation2 %>% ggplot(aes(as.numeric(time), wheat_prop, group = agent)) + geom_point(alpha = .2)
-```
 
 ```{r}
 load('../Silvanus/R/sysdata.rda')
@@ -455,27 +521,24 @@ survivor_scale <- 0.1
 reproduce <- function(individuals) {
   individuals %>%
     left_join(life_table, by = 'age') %>% 
-    mutate(fertility_reduction = pgamma(payoff, shape = fertility_shape, scale = fertility_scale),
+    mutate(fertility_reduction = pgamma(pmin(1, payoff / 0.5), shape = fertility_shape, scale = fertility_scale),
            reproduced = rbernoulli(n(), fertility_rate / 2 * fertility_reduction)) %>% # divide by two to make everyone female
     filter(reproduced == TRUE) %>% # if nrows == 0, will give a (for some reason unsuppressible) warning
-    tally %>% # count births per household
-    uncount(n) %>% # repeat rows based on birth count per household
-    mutate(age = 0, alpha = 1.5, beta = 1.5, risk = alpha / (alpha + beta), crop = 'barley') %>%
-    bind_rows(individuals, .) %>%
-    ungroup # check for filled na's here?
+    mutate(age = 0, alpha = 1.5, beta = 1.5, risk = alpha / (alpha + beta)) %>%
+    select(-c(fertility_rate:reproduced)) %>%
+    bind_rows(individuals, .)
 }
 
 
 die <- function(individuals) {
   individuals %>%
         left_join(life_table, by = 'age') %>% 
-    mutate(survival_reduction = pgamma(pmin(1, payoff), shape = survival_shape, scale = survivor_scale),
+    mutate(survival_reduction = pgamma(pmin(1, payoff / 0.5), shape = survival_shape, scale = survivor_scale),
            survived = rbernoulli(n(), survival_rate * survival_reduction)) %>%
     filter(survived == TRUE) %>%
     select(-c(fertility_rate:survived)) %>%
     mutate(age = age + 1)
 }
-
 ```
 
 Ok so next we need to have the birth and death stuff run with all the prior information in it. dont need to propogate the prior exactly, just need to add in a new weak prior. at least propogate the risk number, but not the prior?
@@ -484,89 +547,33 @@ reduce(1:600, ~reproduce(.x) %>% die , .init = agents) %>%
   pull(age) %>% hist
 ```
 
-
-
-
-## Climate Modeling and Bias Correction
-
-Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research's Earth System Grid repository (https://www.earthsystemgrid.org). TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to orbital parameters and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present (Figure 2) [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of climate forcings (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
-
-![Example model precipitation outputs from the TraCE-21k simulation at 9.5ka BP.](figures/trace_white.png)
-
-
-TraCE-21k simulation outputs for the past 10,000 years were bias-corrected using the CDF-t method and observed precipitation from a weather station in near the town of Salihli in western Turkey. This location was selected due to its long (~70yr) observational record, the representativeness of western Anatolian climate for the greater eastern Mediterranean, and its proximity to archaeological sites with comparative evidence of crop diversification strategies.
-
-
-Now incorporate realistic drought variability from simulations.
+Another question here about initialization ... namely that we are starting with 80 year olds with no beliefs about the system?
 
 
 ```{r}
-konya <- matrix(c(32.5, 37.9), nrow = 1)
-#konya <- matrix(c(33.5138, 36.2765), nrow = 1)
-```
-
-```{r}
-precc <- map(list.files('Data/PRECC', full.names = TRUE)[-12],
-             ~brick(.) %>%
-               raster::extract(konya, df = TRUE) %>%
-  select(-ID) %>%
-  gather(time, precc) ) %>%
-  bind_rows()
-precl <- map(list.files('Data/PRECL', full.names = TRUE)[-12],
-             ~brick(.) %>%
-               raster::extract(konya, df = TRUE) %>%
-  select(-ID) %>%
-  gather(time, precl) ) %>%
-  bind_rows()
-
-sim_past <- left_join(precc, precl) %>%
-  mutate(rainfall = (precc + precl) * 2.628e+9,
-         year = rep(-10200:-5001, each = 12), # add hardcode dates instead of using ncdf time because of date shift with averaging period
-         month = rep(1:12, times = 5200)) %>%
-  select(-time, -precl, -precc) %>%
-  mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
-   filter(!(month %in% c(6:9))) %>%
-  group_by(water_year) %>%
-  add_tally() %>%
-filter(n == 8) %>%
-  summarise(precip = sum(rainfall)) %>%
-  mutate(drought = precip < 300)
-```
-
-
-```{r, fig.height =3, fig.width = 9, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by century.'}
-sim_past %>%
-  filter(between(water_year, -9500, -5500)) %>%
-  mutate(time_step = ceiling(water_year / 50),
-         year = time_step * 50) %>%
-  group_by(year) %>%
-  summarise(risk = sum(drought) / 50) %>%
-  ggplot(aes(year, risk, fill = risk, color = risk)) +
-  geom_hline(yintercept = indiff$risk, color = 'black', linetype = 2, width = 1.2) +
-  geom_col()  +
-  scale_fill_distiller(palette = 'YlOrRd', direction = 1) +
-  scale_color_distiller(palette = 'YlOrRd', direction = 1)+
-  theme_minimal() +
-  labs(x = 'Years BP', y = 'Drought risk')  + theme(legend.position = "none")
-```
-
-```{r}
-simulation4 <- accumulate(sim_past$drought, ~learn(.x, .y) %>% reproduce %>% die, .init = agents) %>% 
+simulation3 <- accumulate(sim_past$drought, ~learn(.x, .y) %>% reproduce %>% die, .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
 ```
 
-So the problem now is the population dynamics are getting in the way ... and that it'd be nice to have something akin to the moran process to ensure fixed population
-```{r, echo = TRUE}
-ggplot(simulation4, aes(time, risk)) +
+So the problem now is the population dynamics are getting in the way ... and that it'd be nice to have something akin to the moran process to ensure fixed population. OR recognize the importance of population dynamics and have the full continuous yields from the medland functions and just determine the chunked payoffs from there? The problem now is that if we set the food requirement to calculate the food ratio to something like 0.5, then there is no benefit to the increased yields and hence no real tradeoff between yields and risk management. perhaps just record the cumulative surplus and have that be something
+```{r}
+ggplot(simulation3, aes(time, risk)) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
   theme_classic()
 ```
 
 ```{r}
-simulation4 %>%
+ggplot(simulation3, aes(time, payoff)) +
+  geom_point(alpha = .1) +
+  #geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic()
+```
+
+```{r}
+simulation3 %>%
   group_by(time) %>%
   tally %>%
   plot
@@ -638,26 +645,6 @@ so in this case drought risk is low enough all the time you never get any divers
 ## Satisficing learners
 
 
-```{r}
-library(ggridges)
-accumulate((runif(25) < .2), ~calc_payoff(.x, drought = .y) %>% update_prop(aspiration = .6), .init = test3) %>% bind_rows(.id = 'time') %>% ggplot(aes(wheat_prop, y = as.numeric(time), group = as.numeric(time))) +
-  geom_density_ridges() +
-  theme_minimal()
-```
-
-
-
-
-```{r}
-# this is for nature
-calcNE <- function(risk){
-  (118 - 25 * risk) / (278 - 185 * risk)
-}
-
-plot(0:10, calcNE((0:10)/10))
-```
-
-
 
 
 so we're imagining a yield of 1 for barley and 2 for wheat, with equal proportions of each. then in the next time step we'd revise the proportion to take away .25
@@ -669,15 +656,48 @@ reallocate <- function(wheat_prop, risk) {
 accumulate(1:10, ~reallocate(.x), .init = .4) %>% plot
 
 # so this works as long as you're between 0 and 1
+
+```
+
+```{r, eval = FALSE}
+readxl::read_xls('Data/41467_2014_BFncomms4953_MOESM580_ESM.xls', range = 'A2:O370') %>%
+  rename(site = `Site Location`, taxon = Taxon, age = `ky cal BP`, yield = `GY (t*ha-1)`) %>%
+  select(site, taxon, age, yield) %>%
+  #filter(!is.na(yield)) %>%
+  mutate(yield = if_else(is.na(yield), 0, yield)) %>%
+    ggplot(aes(yield)) +
+  geom_histogram(aes(fill = taxon)) +
+  facet_wrap(~taxon, nrow = 2)
+  
+readxl::read_xls('Data/41467_2014_BFncomms4953_MOESM580_ESM.xls', range = 'A2:O370') %>%
+  rename(site = `Site Location`, taxon = Taxon, age = `ky cal BP`, yield = `GY (t*ha-1)`) %>%
+  select(site, taxon, age, yield) %>%
+  filter(!is.na(yield)) %>%
+  filter(site == 'Akarçay Tepe') %>%
+  mutate(yield = yield * 1000,
+         yield = if_else(taxon == 'Hordeum vulgare', yield * 3000, yield * 3540)) %>%
+group_by(taxon) %>%
+  summarise(yield_mean = mean(yield), yield_sd = sd(yield)) %>%
+  mutate(yield = map2(yield_mean, yield_sd, ~rnorm(100000, .x, .y))) %>%
+  select(taxon, yield) %>%
+  unnest(cols = c(yield)) %>% 
+  mutate(yield = if_else(yield > 0, yield, 0)) %>%
+  ggplot(aes(yield)) +
+  geom_histogram(aes(fill = taxon)) +
+  facet_wrap(~taxon, nrow = 2)
+```
+
+```{r}
+rnorm(10000, 1582521,	780883.5) %>% hist
+rnorm(10000, 3060657,	1461350.0) %>% hist
 ```
 
 
-
 ```{r}
-yield_max_barley <- 2500
-yield_max_wheat <- 3500
-kcal_barley <- 3000
-kcal_wheat <- 3540
+yield_max_barley <- 2.500
+yield_max_wheat <- 3.500
+kcal_barley <- 1 #3000
+kcal_wheat <- 3540 / 3000
 
 calc_yield <- function(rainfall, crop = 'wheat') {
   if (crop == 'wheat') {
@@ -700,9 +720,8 @@ tibble(rainfall = (0:200) / 100,
   geom_line() +
   geom_hline(yintercept = yield_max_wheat * kcal_wheat) +
   geom_hline(yintercept = yield_max_barley * kcal_barley) +
-  geom_hline(yintercept = 1016525 * 5, color ='red') + # cals for family of 5?
-  geom_vline(xintercept = 0.3) +
-  geom_vline(xintercept = .2)
+  #geom_hline(yintercept = 1016525 * 5, color ='red') + # cals for family of 5?
+  geom_vline(xintercept = 0.3)
 ```
 
 How do we define the "drought year" cutoff? Below 300mm there isn't enough wheat growing in a hectare to feed a family of 5, which seems appropriate.
@@ -722,4 +741,30 @@ test %>%
 
 
 
+Similar to above, but satisficing
+```{r}
+learn_satisficing <- function(agents, drought, aspiration) {
+  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
+  if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
+  
+  agents %>%
+     mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
+            new_prop = round(runif(n()), 2),
+           wheat_prop = if_else(payoff > aspiration, wheat_prop, new_prop)) %>%
+    select(-new_prop)
+}
+```
+
+```{r}
+test3 <- tibble(agent = 1:100) %>%
+  mutate(wheat_prop = round(runif(n()), 2))
+
+simulation3 <- accumulate(droughts, ~learn_satisficing(.x, .y, aspiration = .5), .init = test3) %>% 
+  bind_rows(.id = 'time') %>%
+  mutate(time = as.numeric(time)) %>%
+  filter(time != 1)
+  
+simulation2 %>% ggplot(aes(as.numeric(time), payoff, group = agent)) + geom_point(alpha = .2)
+simulation2 %>% ggplot(aes(as.numeric(time), wheat_prop, group = agent)) + geom_point(alpha = .2)
+```
 
