@@ -1,0 +1,509 @@
+% !TeX program = pdfLaTeX
+\documentclass[smallextended]{svjour3}       % onecolumn (second format)
+%\documentclass[twocolumn]{svjour3}          % twocolumn
+%
+\smartqed  % flush right qed marks, e.g. at end of proof
+%
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+
+\usepackage[hyphens]{url} % not crucial - just used below for the URL
+\usepackage{hyperref}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+%
+% \usepackage{mathptmx}      % use Times fonts if available on your TeX system
+%
+% insert here the call for the packages your document requires
+%\usepackage{latexsym}
+% etc.
+%
+% please place your own definitions here and don't use \def but
+% \newcommand{}{}
+%
+% Insert the name of "your journal" with
+% \journalname{myjournal}
+%
+
+%% load any required packages here
+
+
+
+
+
+\begin{document}
+
+\title{The dynamics of risk perception in a Mediterranean agroecosystem \thanks{Grants or other notes about the article that should go on the front page
+should be placed here. General acknowledgments should be placed at the
+end of the article.} }
+
+
+    \titlerunning{Risk perception in a Mediterranean agroecosystem}
+
+\author{  Nicolas Gauthier 1 \and  }
+
+    \authorrunning{ Gauthier }
+
+\institute{
+        Nicolas Gauthier 1 \at
+     Laboratory of Tree-Ring Research \& School of Geography and Development,
+ University of Arizona \\
+     \email{\href{mailto:ngauthier@email.arizona.edu}{\nolinkurl{ngauthier@email.arizona.edu}}}  %  \\
+%             \emph{Present address:} of F. Author  %  if needed
+    \and
+    }
+
+\date{Received: date / Accepted: date}
+% The correct dates will be entered by the editor
+
+
+\maketitle
+
+\begin{abstract}
+Small-scale agriculturalists in the Mediterranean Basin rely on multiple
+strategies including diversification, intensification, and storage to
+maintain a stable food supply in the face of environmental uncertainty.
+Each of these strategies requires farmers to make specific resource
+allocation decisions in response to environmental risks and is thus
+sensitive to variability in both the spatiotemporal pattern of risk and
+the ability of farmers to perceive that pattern. In this chapter, I
+present an agent-based model of a Mediterranean agroecosystem. By
+driving the model with realistic environmental dynamics derived from
+simulations of mid-Holocene Mediterranean climate, and by allowing the
+psychology of risk perception to vary among individual farmers, I
+explore the hidden vulnerabilities of traditional risk-management
+strategies to periods of rapid climate change. I show that even when
+farmers are able to manage risk ``optimally'' in light of past
+experience, unanticipated changes in the spatiotemporal pattern of
+rainfall can still lead to major food shortfalls.
+\\
+\keywords{
+        key \and
+        dictionary \and
+        word \and
+    }
+
+    \subclass{
+                    MSC code 1 \and
+                    MSC code 2 \and
+            }
+
+\end{abstract}
+
+
+\def\spacingset#1{\renewcommand{\baselinestretch}%
+{#1}\small\normalsize} \spacingset{1}
+
+
+\hypertarget{intro}{%
+\section{Introduction}\label{intro}}
+
+Over the past 10,000 years, subsistence farmers in the Mediterranean
+basin have developed sophisticated strategies to maintain stable food
+supplies given uncertain rainfall. Their suite of strategies include
+practices like crop diversification, storage, and exchange (Halstead and
+O'Shea 1989)). These risk-management strategies all represent forms of
+\emph{regulatory feedback} used to manage complex socio-ecological
+systems. Regulatory feedbacks convert a system's high-variance inputs
+into low-variance outputs by dynamically monitoring the outputs and
+adjusting internal properties of the system ({\textbf{???}}).
+Risk-managing strategies require farmers to make specific resource
+allocation decisions in response to environmental risks, and as
+regulatory feedbacks they are thus sensitive to variability in both the
+spatiotemporal patterns of risk and the ability of farmers to perceive
+and act on those patterns.
+
+Crop diversification is an excellent example of a widespread and
+effective regulatory feedback strategy (Figure 1). Relying on a mix of
+food types with different climatic tolerances is an efficient way to
+maintain a robust food supply ({\textbf{???}},Anderies2006). In the
+Mediterranean, land-use strategies involving a diversified portfolio of
+wheat and barley have been employed by even the earliest sedentary
+farmers, and continue to be used to this day (Gould
+1963,Slafer1999,Abbo2009a,Marston2011190). Wheat generally has higher
+yields but is sensitive to water deficits, while barley has lower yields
+and is drought tolerant. Planting a mix of wheat and barley, either in
+the same plot or in a combination of plots, is an effective means of
+diversifying grain supplies. By adjusting the ratio of wheat to barley,
+farmers can adapt to changing drought risks.
+
+The secret to the success of earliest farmers on the mediterrenan
+littoral was in their manipulation of the local ecosystem to manage
+environmental risks. Early farmers constructed a complex agroecosystem
+to manage risk. They needed to maintain stable crop yields in face of
+uncertain drought risks. Yield stability is very important for
+traditional agriculturlal commmunities not connected to larger bulk food
+networks (Abbo et al 2010) neolithic crop package -- weiss zohary 2011
+cite abbo et al 2010? for more stuff about ladraces Wheat/barley systems
+example of system that combines low yield, low wirks crop with high
+yield high risk crop, an effective context paut et al 2019 These
+strategies work when risks are knonw and constant, but may be more
+susceptible to periods of changing climateic risks so understanding how
+people of the past adapted to change is important to us today
+
+Are these crop-diversification strategies vulnerable to the same
+dynamics as other social-ecological systems with similar regulatory
+feedbacks mechanisms? One way to address this is to model the influence
+of imperfect monitoring and biased decision making in uncertain
+environments. In this study, I accomplish this by answering two main
+questions:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  What was the temporal pattern of climate and climate change during the
+  Holocene in the eastern Mediterranean?
+\item
+  How well could crop diversification strategies cope with this pattern,
+  given farmers' imperfect risk perception and decision-making?
+\end{enumerate}
+
+Questions: How would the earliest farmers have made decisions (dealt
+with uncertainty?) about crop diversification? ie what were the
+different algorithms? -- better understand the decision context What are
+the consequences of theses different decisions (i.e.~how well did they
+perform) at different points in the history of the mediterranean How
+were farmers able to detect changes in the environment, rather than
+unconsciously adapt to them? what are the different consequences we'd
+expect for each THIS is the most important question because with it I
+can frame the results around and individual's perception of droughts in
+the neolithic, and the populaiton-level distribution of drought
+perceptions at given times
+
+I couple a climate model with high temporal resolution to a simple game
+theoretic model of agricultural decision making under uncertainty, in
+order to examine the performance of optimal and suboptimal wheat-barley
+diversification practices. I model the year-to-year crop diversification
+strategies made by farmers as an iterated game of fictitious play
+against nature (Gould 1963). Farmers are boundedly rational, in that
+they seek to maximize their objective functions given the perceived
+probabilities of different actions by nature, but work with flawed
+mental models of climate-related risks due to imperfect recall of past
+events. Furthermore, by using a climate model to represent the actions
+of nature, I can more precisely capture the characteristic
+autocorrelated patterns of rainfall variability, rather than simply
+drawing rainfall values from a static distribution. This framework
+allows me to address the sensitivity of diversification strategies to
+changes and climatic variability and imperfect human perceptions of
+those changes.
+
+\hypertarget{sec:1}{%
+\section{Decision-making in a game against nature}\label{sec:1}}
+
+The basic decision-making problem facing a farmer seeking to diversify
+their crops can be thought of as a game against nature. We can represent
+this simplified decision context as a ``game'' in a game theorietic
+context. cite luce raiffa 1989 for game against nature, and milnor 1952,
+Agrawal1968, cassidy1971, gould 1963 The ``game'' in this context is the
+farmer's decision of which crops to plant and in what proportions, given
+uncertianty in the future ``state-of-nature'', and nature varies between
+several possible states such as dry and wet years. payoff matrix goes
+here in reality continuous, but cite behavioral econ for people often
+intuitively solve an easier problem when faced with a complex real-world
+situation The exact values in the payoff matrix here are less important
+than the relative payoffs in each quadrant. We can think of this game as
+being the culturally-inherited object. our question is how do
+individuals make decisions here? so in this case the cultural norm would
+be to mix wheat and barley, but the learning is in the exact ratio --
+both individual and social learning influence perceptions of eindividual
+vs social learning tucker 2007
+
+Estimates of yield volume (t/ha) for each crop type in wet and dry years
+were derived from isotopic studies of ancient wheat and barley samples
+from archaeological sites in the Mediterranean (Araus, Slafer, and
+Romagosa 1999) (Table 1).
+
+\begin{table}
+\centering
+\caption{Estimated yields for ancient wheat and barley varieties derived from [@Slafer1999].}
+\begin{tabular}{|l|l|l|}
+\hline
+
+ & Dry Year & Normal Year \\ \hline
+Barley Yield & 0.93 & 1.18 \\ \hline
+Wheat Yield & 0 & 1.60 \\ \hline
+
+\end{tabular}
+\end{table}
+
+How should an early farmer make a decision in light ot this uncertainty?
+The basic logic of crop diversitication is Portfolio of crops ala modern
+portfolio theory: Blank2001 Sometimes best to think of nature as a
+sentient opponent out to get you, and play strategically based on that
+assumption. Gould 1963, Beckenkamp 2008 quick overview of criteria
+without risk, then say that a better option is to estimate the
+probabilities of the different state of nature Agrawal1968 talks about
+the strategies in the context of agriculture being a game against nature
+here I can slip in the cool thing about acting like the weather is out
+to get you being a good idea in states of complete uncertainty
+transition -- the problem becomes easier if you have at least someI idea
+of nature's moves , because then you cna work to get the highest yeilds
+given the risk of drought Decision strategies as choosing different
+points -- plot of decisions
+
+\begin{align}
+a^2+b^2=c^2
+\end{align}
+
+\begin{figure}
+\centering
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-4-1.pdf}
+\caption{Expected wheat and barley yields under increasing drought risk
+with the point of indifference highlighted.}
+\end{figure}
+
+If an individual can learn about their environment, such as the risk of
+drought in any given year, then they can behave more rationally by
+trying to maximize their subjective expected utility If the probability
+distributin of nature's moves is known, the farmer can choose the crop
+mix that simply maximizes the expected crop yields given the empirical
+frequency distirubtion of nature's moves. In the language of game
+theory, this strategy is knoan as a ``game of ficticious play'' against
+nature. This is an effective risk-managing strategy, but like all
+similar strategies that adapt to a specific pattern of variability, it
+is vulnerable to changes in the pattern of variability (Janssen eta al
+2007) This strategy works well when the environment is stationary --
+nature plays from a fixed probability distirubtion, but is vulnerable to
+environmental nonstationarity. That is, when the mean or higher order
+moments of the rainfall distribution shift, playing a game of fictitious
+play can backfire because you're too stuck in your ways while the world
+changes around you. Thus it is important to understand the dynamics of
+risk perception -- how subjective risks, and thus subjective expected
+utility -- rise and fall in uncertain environments.
+
+\hypertarget{sec:2}{%
+\section{The dynamics of risk perception}\label{sec:2}}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-5-1.pdf}
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-5-2.pdf}
+
+\hypertarget{drought-risks-in-the-middle-holocene}{%
+\section{Drought risks in the middle
+Holocene}\label{drought-risks-in-the-middle-holocene}}
+
+\hypertarget{climate-risks-and-risk-perception}{%
+\section{Climate Risks and Risk
+Perception}\label{climate-risks-and-risk-perception}}
+
+Using the bias-corrected climate model output, I divided each model year
+into dry years and wet years. A dry year was any year where less than
+300mm of rain fell during the wet season (October-March), the threshold
+below which wheat crops will generally fail ({\textbf{???}}), and a
+wet/normal year was defined as any year above this threshold.
+
+Given the modeled patterns of wet and dry years, drought risk for any
+particular year was defined as the proportion of the previous 50 years
+that were dry years
+
+\begin{equation}
+    P_{dry} = \frac{\sum_{n=t-1}^{t-50} precip_n < 300}{50},
+\end{equation} where \(t\) is the current time step. The 50 year time
+span was selected to approximate the accumulated observational knowledge
+of an individual farmer and their immediate household. As a result, this
+approach does not allow for accumulated social learning, although it
+could easily be extended to do so in future studies.
+
+\hypertarget{climate-modeling-and-bias-correction}{%
+\subsection{Climate Modeling and Bias
+Correction}\label{climate-modeling-and-bias-correction}}
+
+Estimates of drought risk in the eastern Mediterranean during the the
+past 10,000 years were derived from outputs of the TraCE-21k
+paleoclimate simulation available on the National Center for Atmospheric
+Research's Earth System Grid repository
+(\url{https://www.earthsystemgrid.org}). TraCE-21K is a state-of-the-art
+simulation that uses a coupled atmosphere-ocean general circulation
+model (GCM) to recreate the transient response of the global climate
+system to orbital parameters and greenhouse gasses over the past 22,000
+years from the Last Glacial Maximum to the present (Figure 2) (He 2011).
+It generates physically consistent spatiotemporal climate dynamics,
+driven by current best estimates of climate forcings (e.g.~orbit,
+greenhouse gasses, glacial meltwater flux). The model simulates these
+dynamics on a six hourly timescale, and model outputs are archived at a
+monthly resolution.
+
+TraCE-21k simulation outputs for the past 10,000 years were
+bias-corrected using the CDF-t method and observed precipitation from a
+weather station in near the town of Salihli in western Turkey. This
+location was selected due to its long (\textasciitilde{}70yr)
+observational record, the representativeness of western Anatolian
+climate for the greater eastern Mediterranean, and its proximity to
+archaeological sites with comparative evidence of crop diversification
+strategies.
+
+Now incorporate realistic drought variability from simulations.
+
+\begin{verbatim}
+## Loading required namespace: ncdf4
+\end{verbatim}
+
+\begin{figure}
+\centering
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-8-1.pdf}
+\caption{Annual risk of wheat crop failure due to drought, averaged by
+fifty-year period}
+\end{figure}
+
+\hypertarget{the-model}{%
+\section{The Model}\label{the-model}}
+
+Run an experiment. Simulate a time series with varying drought
+frequency. This is a stepwise nonstationary process
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-12-1.pdf}
+
+Redo these plots so its a single person, one who was born in a drought
+period then experiences an ameliorarion and another who experiences a
+shift to drought conditions later in life? basically this section neds
+to work more with individuals and explore that stuff
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-14-1.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-15-1.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-16-1.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-17-1.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-18-1.pdf}
+
+These two plots begin to look more alike the more you sample, which
+makes sense because its an ergodic system.
+
+Note in these plots above and below we're summing all the wheat and
+barley in the population, compared to below which shows the wheat
+proportions of individuals
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-19-1.pdf}
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-19-2.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-20-1.pdf}
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-20-2.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-21-1.pdf}
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-21-2.pdf}
+
+\begin{verbatim}
+## Picking joint bandwidth of 0.0146
+\end{verbatim}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-22-1.pdf}
+
+\begin{verbatim}
+## Picking joint bandwidth of 0.0204
+\end{verbatim}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-22-2.pdf}
+
+make this a function to calculate payoffs for all wheat or all barley
+strategies as a comparison
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-23-1.pdf}
+
+\includegraphics{manuscript_files/figure-latex/unnamed-chunk-24-1.pdf}
+
+\section{Results and Discussion}
+
+The bias-corrected wet season precipitation outputs from TraCE-21k show
+a relatively stationary distribution over the past 10,000 years, with
+slightly drier conditions during the early-mid Holocene transition at
+c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop
+is immediately apparent; rainfall often fails to meet the 300mm
+threshold for a productive wheat crop during the entire 10,000 year
+span, but drops below the threshold for barley only a handful of years.
+
+The risk of crop failure due to drought in any given year varies between
+10\% and 20\%, punctuated by one to four century-long events where risk
+drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high
+drought risk cluster around known periods of regional and global climate
+deterioration, such as at 8.6ka BP and 4.2ka BP.
+
+Given the average drought risks estimated from TraCE-21k and assuming
+perfect monitoring and recall of recent droughts (i.e. \(\lambda = 0\)),
+farmers intent on minimizing the risk of crop failure would be expected
+to plant about 65\% barley to 35\% wheat on average. This proportion is
+within the range estimated from macrobotanical remains at a nearby
+archaeological site ({\textbf{???}}). Yield maximizing farmers instead
+play a pure strategy profile, planting wheat if the perceived drought
+risk is less than 0.68 and barley if it is more. Because the
+GCM-simulated drought risk never rises above this threshold, a
+yield-maximizing farmer will always plant a wheat monocrop.
+
+Examining the long-term dynamics of crop yields among all
+decision-making strategies and psychological profiles reveals
+variability in yields due to different decision making preferences is
+far greater variability due to differences in risk perception (Figure
+7). Risk-minimizing strategies sacrifice productivity for
+predictability, consistently lowering the mean and variance of crop
+yields over time. Risk-minimizing strategies are more sensitive to risk
+perception than yield-maximizing strategies; varying the memory decay
+rate parameter \(\lambda\) had no effect on the optimal crop allocation
+for yield maximizers.
+
+During periods of climatic stability, allowing past experiences to
+influence decision making helps farmers minimize the impacts of
+\emph{predictable} drought. But past experiences are less informative
+during periods of rapid climate change, and even farmers who manage risk
+``optimally'' experience major food shortfalls. Climatically-induced
+variability in food supplies consistently surpasses that from
+differences in risk-perception psychology, but not that from different
+risk aversion preferences. This finding suggests that the efficacy of
+risk managing strategies that rely on regulatory feedbacks is limited to
+periods of relative climatic stability. This is consistent with the
+observation from the Roman Period Mediterranean that while minor food
+crises were common in the ancient world, extreme famines were rare
+(Garnsey 1989).
+
+Statistically downscaling palaeoclimate simulations and coupling them to
+game theoretic models of decision making under uncertainty is a simple
+way to better understand the patterning of climate changes and the
+regulatory feedbacks farmers use to adapt to them. To further explore
+these patterns, future work should incorporate additional
+risk-minimizing strategies such as storage and exchange. Food storage
+and exchange can also be thought of as forms of diversification, the
+former in the time and the latter in space ({\textbf{???}}). Food
+exchange would be of particular interest from a game theoretic
+perspective, as incomplete information with respect to an exchange
+partner's crop diversification and storage practices can lead to
+situations of moral hazard.
+
+Think about the importance of the population's age structure, becuase
+that's going to impact the collective memory of drought.
+
+\hypertarget{references}{%
+\section*{References}\label{references}}
+\addcontentsline{toc}{section}{References}
+
+\hypertarget{refs}{}
+\leavevmode\hypertarget{ref-Slafer1999}{}%
+Araus, J. L., G. A. Slafer, and I. Romagosa. 1999. ``Durum wheat and
+barley yields in antiquity estimated from 13C discrimination of
+archaeological grains: a case study from the Western Mediterranean
+Basin.'' \emph{Australian Journal of Plant Physiology} 26 (4): 345.
+\url{https://doi.org/10.1071/PP98141}.
+
+\leavevmode\hypertarget{ref-Garnsey1989}{}%
+Garnsey, Peter. 1989. \emph{Famine and Food Supply in the Graeco-Roman
+World: Responses to Risk and Crisis}. Cambridge University Press.
+
+\leavevmode\hypertarget{ref-GOULD1963a}{}%
+Gould, Peter R. 1963. ``Man Against His Environment: A Game Theoretic
+Framework.'' \emph{Annals of the Association of American Geographers} 53
+(3): 290--97. \url{https://doi.org/10.1111/j.1467-8306.1963.tb00450.x}.
+
+\leavevmode\hypertarget{ref-Halstead1989}{}%
+Halstead, Paul, and John O'Shea. 1989. ``Introduction: cultural
+responses to risk and uncertainty.'' In \emph{Bad Year Economics:
+Cultural Responses to Risk and Uncertainty}, edited by Paul Halstead and
+John O'Shea, 1--7. Cambridge: Cambridge University Press.
+\url{https://doi.org/10.2307/281441}.
+
+\leavevmode\hypertarget{ref-He2011}{}%
+He, Feng. 2011. ``Simulating Transient Climate Evolution of the Last
+Deglatiation with CCSM3.'' PhD thesis, Madison.
+
+\bibliographystyle{spbasic}
+\bibliography{bibliography.bib}
+
+\end{document}
