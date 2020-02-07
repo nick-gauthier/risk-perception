@@ -230,6 +230,22 @@ sim_past %>%
   labs(x = 'Years BP', y = 'Drought risk')  + theme(legend.position = "none")
 ```
 
+```{r}
+devtools::install_github('nfultz/binomialbcp')
+library(binomialbcp)
+data("kansas")
+kansas
+
+t12 <- sim_past %>%
+  filter(between(water_year, -9500, -5500)) %>%
+  mutate(time_step = ceiling(water_year / 50),
+         year = time_step * 50) %>%
+  group_by(year) %>%
+  summarise(risk = sum(drought)) %>% pull(risk)
+binomialbcp(t12, rep(50, length(t12))) %>% plot
+
+1 - c(71,18,18)/225
+```
 
 
 Start with a population of agents with the same subjective beliefs about drought risk.
@@ -263,6 +279,16 @@ tibble(year = seq(5, 50, 5),
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
   geom_line(aes(group = year, color = year), size = 1.2) +
+  scale_color_viridis_c() +
+  theme_bw() +
+  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
+
+tibble(year = 50,
+       risk = seq(.1,.9, .1)) %>%
+  mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
+  unnest(cols = c(belief)) %>%
+  ggplot(aes(x, y)) +
+  geom_line(aes(group = risk, color = risk), size = 1.2) +
   scale_color_viridis_c() +
   theme_bw() +
   ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
@@ -319,6 +345,8 @@ learn2 <- function(agents, drought) {
           # mu = alpha / (alpha + beta),
            risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
 }
+
+# or keep risk parameter constant and reduce the effective sample size, in other words keep the ratio of alpha to beta but decrease the absoulte value
 ```
 
 
