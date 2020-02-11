@@ -37,14 +37,13 @@ output: rticles::springer_article
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 library(raster)
+library(ncdf4)
 library(tidyverse)
+set.seed(1000)
 ```
 
-```{r}
-set.seed(1111)
-```
 
 # Introduction {#intro}
 
@@ -63,38 +62,20 @@ so understanding how people of the past adapted to change is important to us tod
 
 Are these crop-diversification strategies vulnerable to the same dynamics as other social-ecological systems with similar regulatory feedbacks mechanisms? One way to address this is to model the influence of imperfect monitoring and biased decision making in uncertain environments. In this study, I accomplish this by answering two main questions:
 
-1. What was the temporal pattern of climate and climate change during the Holocene in the eastern Mediterranean?
-2. How well could crop diversification strategies cope with this pattern, given farmers’ imperfect risk perception and decision-making?
+1. How likely are droughts to occur each year in the eastern Mediterreanean, and how did these risks change over the Holocene?
+2. How might Neolithic farmers have percieved these changing drought risks, and what were the consequences for farming communities with respect to their collective ability to manage risk?
 
-
-Questions:
-How would the earliest farmers have made decisions (dealt with uncertainty?) about crop diversification?
-ie what were the different algorithms? -- better understand the decision context
-What are the consequences of theses different decisions (i.e. how well did they perform) at different points in the history of the mediterranean
-How were farmers able to detect changes in the environment, rather than unconsciously adapt to them?
-what are the different consequences we'd expect for each
-THIS is the most important question because with it I can frame the results around and individual's perception of droughts in the neolithic, and the populaiton-level distribution of drought perceptions at given times
 
 I couple a climate model with high temporal resolution to a simple game theoretic model of agricultural decision making under uncertainty, in order to examine the performance of optimal and suboptimal wheat-barley diversification practices. I model the year-to-year crop diversification strategies made by farmers as an iterated game of fictitious play against nature [@GOULD1963a]. Farmers are boundedly rational, in that they seek to maximize their objective functions given the perceived probabilities of different actions by nature, but work with flawed mental models of climate-related risks due to imperfect recall of past events. Furthermore, by using a climate model to represent the actions of nature, I can more precisely capture the characteristic autocorrelated patterns of rainfall variability, rather than simply drawing rainfall values from a static distribution. This framework allows me to address the sensitivity of diversification strategies to changes and climatic variability and imperfect human perceptions of those changes.
 
 # Decision-making in a game against nature {#sec:1}
 
 The basic decision-making problem facing a farmer seeking to diversify their crops can be thought of as a game against nature.
-We can represent this simplified decision context as a "game" in a game theorietic context.
-cite luce raiffa 1989 for game against nature, and milnor 1952, Agrawal1968, cassidy1971, gould 1963
-The "game" in this context is the farmer's decision of which crops to plant and in what proportions, given uncertianty in the future "state-of-nature", and nature varies between several possible states such as dry and wet years.
-payoff matrix goes here
-in reality continuous, but cite behavioral econ for people often intuitively solve an easier problem when faced with a complex real-world situation
-The exact values in the payoff matrix here are less important than the relative payoffs in each quadrant.
-We can think of this game as being the culturally-inherited object. our question is how do individuals make decisions here?
-so in this case the cultural norm would be to mix wheat and barley, but the learning is in the exact ratio -- both individual and social learning influence perceptions of eindividual vs social learning tucker 2007
-
-Estimates of yield volume (t/ha) for each crop type in wet and dry years were derived from isotopic studies of ancient wheat and barley samples from archaeological sites in the Mediterranean [@Slafer1999] (Table 1). 
-
+We can represent this simplified decision context as a "game" in a game theorietic context (Luce raiffa 1989, milnor 1952, Agrawal1968, cassidy1971, gould 1963). The "game" in this context is the farmer's decision of which crops to plant and in what proportions, given uncertianty in the future "state-of-nature", and nature varies between several possible states such as dry and wet years (Table 1). In reality continuous, but people often intuitively solve an easier problem when faced with a complex real-world situation (cite behavioral econ or simon). The exact values in the payoff matrix here are less important than the relative payoffs in each quadrant. We can think of this game as being the culturally-inherited object. Our question is how do individuals make decisions here? So in this case the cultural norm would be to mix wheat and barley, but the learning is in the exact ratio. 
 
 \begin{table}
 \centering
-\caption{Estimated yields for ancient wheat and barley varieties derived from [@Slafer1999].}
+\caption{Estimates of yield volume (t/ha) for ancient wheat and barley varieties derived from [@Slafer1999].}
 \begin{tabular}{|l|l|l|}
 \hline
 
@@ -120,15 +101,14 @@ Sometimes best to think of nature as a sentient opponent out to get you, and pla
 quick overview of criteria without risk, then say that a better option is to estimate the probabilities of the different state of nature
 Agrawal1968 talks about the strategies in the context of agriculture being a game against nature
 here I can slip in the cool thing about acting like the weather is out to get you being a good idea in states of complete uncertainty
-transition -- the problem becomes easier if you have at least someI idea of nature's moves , because then you cna work to get the highest yeilds given the risk of drought
+transition -- the problem becomes easier if you have at least some idea of nature's moves, because then you cna work to get the highest yeilds given the risk of drought.
 Decision strategies as choosing different points -- plot of decisions
 
 \begin{align}
 a^2+b^2=c^2
 \end{align}
 
-
-```{r}
+```{r, fig.height = 3, fig.width = 5, fig.cap = 'Expected wheat and barley yields under increasing drought risk with the point of indifference highlighted.'}
 expected_yield_wheat <- function(risk) {
   risk * wheat_dry + (1 - risk) * wheat_normal
 }
@@ -140,9 +120,7 @@ expected_yield_barley <- function(risk) {
 expected_yield <- function(risk) {
   expected_yield_wheat(risk) + expected_yield_barley(risk)
 }
-```
 
-```{r, echo = FALSE, fig.cap = 'Expected wheat and barley yields under increasing drought risk with the point of indifference highlighted.'}
 indiff <- tibble(risk = (barley_normal - wheat_normal) / (wheat_dry - wheat_normal - barley_dry + barley_normal),
                  yield = risk * wheat_dry + (1 - risk) * wheat_normal)
 indiff_label <- paste0('(', round(indiff$risk, 2), ', ', round(indiff$yield, 2), ')')
@@ -152,76 +130,26 @@ tibble(risk = seq(0, 1, .1),
       Wheat = expected_yield_wheat(risk)) %>%
   gather(type, yield, Barley:Wheat) %>%
   ggplot(aes(risk, yield)) +
-  geom_hline(yintercept = indiff$yield, linetype = 2)+
-  geom_vline(xintercept = indiff$risk, linetype = 2) +
+  geom_hline(yintercept = indiff$yield, linetype = 2, alpha = .5)+
+  geom_vline(xintercept = indiff$risk, linetype = 2, alpha = .5) +
   geom_line(aes(color = type), size = 1.2) +
   geom_point(data = indiff, color = 'black', size = 3) +
   geom_text(data = indiff, label = indiff_label, nudge_x = 0.1, nudge_y = 0.1) +
   theme_classic() +
-  scale_color_discrete(name = 'Crop') +
-  labs(x = 'Drought probability', y = 'Expected yield')
+  scale_color_manual(name = 'Crop', values = c('darkgoldenrod', 'lightgoldenrod')) +
+  labs(x = expression('Drought probability (' * theta * ')'), y = 'Expected yield')
 ```
 
-If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility
-If the probability distributin of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distirubtion of nature's moves.
-In the language of game theory, this strategy is knoan as a "game of ficticious play" against nature.
-This is an effective risk-managing strategy, but like all similar strategies that adapt to a specific pattern of variability, it is vulnerable to changes in the pattern of variability (Janssen eta al 2007)
-This strategy works well when the environment is stationary -- nature plays from a fixed probability distirubtion, but is vulnerable to environmental nonstationarity.
-That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because you're too stuck in your ways while the world changes around you.
-Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
+If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility. If the probability distributin of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distirubtion of nature's moves. In the language of game theory, this strategy is known as a "game of ficticious play" against nature. This is an effective risk-managing strategy, but like all similar strategies that adapt to a specific pattern of variability, it is vulnerable to changes in the pattern of variability (Janssen eta al 2007)
+This strategy works well when the environment is stationary -- nature plays from a fixed probability distirubtion, but is vulnerable to environmental nonstationarity. That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because you're too stuck in your ways while the world changes around you. Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
 
+# Drought risks in eastern Mediterranean {#sec:2}
 
-# The dynamics of risk perception {#sec:2}
+Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research. TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of climate forcings (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
 
-```{r}
-prior <- function(m, n) {
-  domain <- seq(0,1,0.005)
-  val <- dbeta(domain, n * m, n * (1 - m))
-  tibble('x' = domain, 'y' = val)
-}
+TraCE-21k simulation outputs for the past 10,000 years were extracted from the grid cell overlaying the northern Levant and southeastern Turkey. This location was selected due to its proximity to archaeological sites with comparative evidence of crop diversification strategies. This region includes some of the earliest evidence of crop domestication, including sites like Jericho and Can Hasan. 
 
-tibble(year = seq(5, 50, 5),
-       risk = .5) %>%
-  mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
-  unnest(cols = c(belief)) %>%
-  ggplot(aes(x, y)) +
-  geom_line(aes(group = year, color = year), size = 1.2) +
-  scale_color_viridis_c() +
-  theme_bw() +
-  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
-
-tibble(year = 50,
-       risk = seq(.1,.9, .1)) %>%
-  mutate(belief = map2(risk, year, ~prior(.x, .y))) %>%
-  unnest(cols = c(belief)) %>%
-  ggplot(aes(x, y)) +
-  geom_line(aes(group = risk, color = risk), size = 1.2) +
-  scale_color_viridis_c() +
-  theme_bw() +
-  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
-```
-
-# Drought risks in the middle Holocene
-
-# Climate Risks and Risk Perception
-
-Using the bias-corrected climate model output, I divided each model year into dry years and wet years. A dry year was any year where less than 300mm of rain fell during the wet season (October-March), the threshold below which wheat crops will generally fail [@Wilkinson1997], and a wet/normal year was defined as any year above this threshold. 
-
-Given the modeled patterns of wet and dry years, drought risk for any particular year was defined as the proportion of the previous 50 years that were dry years
-
-\begin{equation}
-    P_{dry} = \frac{\sum_{n=t-1}^{t-50} precip_n < 300}{50},
-\end{equation} 
-where $t$ is the current time step. The 50 year time span was selected to approximate the accumulated observational knowledge of an individual farmer and their immediate household. As a result, this approach does not allow for accumulated social learning, although it could easily be extended to do so in future studies.
-
-## Climate Modeling and Bias Correction
-
-Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research's Earth System Grid repository (https://www.earthsystemgrid.org). TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to orbital parameters and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present (Figure 2) [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of climate forcings (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
-
-TraCE-21k simulation outputs for the past 10,000 years were bias-corrected using the CDF-t method and observed precipitation from a weather station in near the town of Salihli in western Turkey. This location was selected due to its long (~70yr) observational record, the representativeness of western Anatolian climate for the greater eastern Mediterranean, and its proximity to archaeological sites with comparative evidence of crop diversification strategies.
-
-
-Now incorporate realistic drought variability from simulations.
+Using the climate model output, I divided each model year into dry years and wet years. A dry year was any year where less than 300mm of rain fell during the wet season (October-May), the threshold below which wheat crops will generally fail [@Wilkinson1997], and a wet/normal year was defined as any year above this threshold. Given the modeled patterns of wet and dry years, drought risk for any particular year was defined as the proportion of the previous 50 years that were dry years. Using the simulated paleoclimate, rather than modern-day weather station observations or paleoclimate proxies, allows us to estimate not just the first order statistics of the climate system (mean, variance of dry years) but also the higher order dynamics like serial autocorrelation in the perisistence of wet and dry years. This presents a much more realistic picture of the inherent year-to-year uncertainty in the climate system, and presents a challenge to simple risk-managing strategies that assume climatic risks are fixed.
 
 
 ```{r}
@@ -234,7 +162,7 @@ precc <- map(list.files('../Data/PRECC', full.names = TRUE)[-12],
              ~brick(.) %>%
                raster::extract(konya, df = TRUE) %>%
   select(-ID) %>%
-  gather(time, precc) ) %>%
+  gather(time, precc)) %>%
   bind_rows()
 precl <- map(list.files('../Data/PRECL', full.names = TRUE)[-12],
              ~brick(.) %>%
@@ -249,7 +177,7 @@ sim_past <- left_join(precc, precl, by = 'time') %>%
          month = rep(1:12, times = 5200)) %>%
   select(-time, -precl, -precc) %>%
   mutate(water_year = if_else(month %in% 10:12, year + 1L, year)) %>% 
-   filter(!(month %in% c(6:9))) %>%
+  filter(!(month %in% c(6:9))) %>%
   group_by(water_year) %>%
   add_tally() %>%
   filter(n == 8) %>%
@@ -258,7 +186,7 @@ sim_past <- left_join(precc, precl, by = 'time') %>%
 ```
 
 
-```{r, fig.height =2, fig.width = 6, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period'}
+```{r, fig.height =2, fig.width = 6, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period. The dashed line indicates the level of risk beyond which one would plant barley over wheat to maximize subjective expected yields, given the payoffs defined in Table 1.'}
 sim_past %>%
   filter(between(water_year, -9500, -5500)) %>%
   mutate(time_step = ceiling(water_year / 50),
@@ -273,6 +201,60 @@ sim_past %>%
   theme_minimal() +
   labs(x = 'Years BP', y = 'Drought risk')  + theme(legend.position = "none")
 ```
+
+
+# The dynamics of risk perception {#sec:3}
+
+Risk Perception
+In order to manage risk, decision-makers must be perceive what exactly that risk is in the local environment.
+An individual's perceived risk entails more than simply the "objective" risk in the external environment [@Tucker2013].
+A person's perceived risk depends in large part on their past experience, and how those experiences shape their expectations for the future.
+Likewise, the social responses to risk will refelct the distribution of perceived risks in a population, and by extension the collective memory of past droughts will have consequences for the population's survival and evolution.
+
+Belief-based agents
+We can capture the influences of risk perception computationally by simulating a population of "belief-based agents".
+These agents develop beliefs about the risk of drought in their environment through personal experience. 
+Each agent's perceived drought risks will change their subjective expected crop yields from planting different ratios of wheat to barley.
+
+Bayesian brains
+We can efficiently simulate these population-level risks perceptions simulating a population of agents with Bayesian brains (Kahvalti et al 2019 double check). Bayesian learning allows for a minimal representation of the environemnt, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
+Our brains do not record every bit of perceived informaiton in memory, rather it stores a "compact encoding" of that information which it uses for future decisions. Even if individuals aren't -- consciously or unconsciously --- making these calculations -- the basic algorithmic problem faced by the brain, and solutions it has evolved, reflect the same basic sets of constraints (Sanborn and Chater 2016).
+
+Bayesian learning from bernoulli observations.
+We can treat this problem elegantly using bayesian statistics using online bayesian learning from bernoulli objersbations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. bernoulli distribution) with paramter theta reprenting the risk of drought. Uncertainty in the value of theta can be represented with a beta distribution, constrained between 0 and 1 (Figure XX). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief. What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely. As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of experience. 
+
+A simple "fixed" bayesian learner thus gets more certain with age.
+For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optomisitc when things have really changed for the worse, and alternately being two conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
+
+```{r, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
+prior <- function(m, n) {
+  domain <- seq(0,1,0.005)
+  val <- dbeta(domain, n * m, n * (1 - m))
+  tibble('x' = domain, 'y' = val)
+}
+
+tibble(Age = seq(5, 50, 5),
+       risk = .5) %>%
+  mutate(belief = map2(risk, Age, ~prior(.x, .y))) %>%
+  unnest(cols = c(belief)) %>%
+  ggplot(aes(x, y)) +
+  geom_line(aes(group = Age, color = Age), size = 1.2, alpha = .8) +
+  scale_color_viridis_c(guide = 'legend') +
+  labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
+  theme_classic()
+```
+
+But what if nature isn't stationary?
+That is, what if the risk of a drought, theta, is not a constant but rather varies unpredictably in time?
+The statistical problem shifts then to one of change detection (o'reilly 2013, gallistel et al 2014).
+In other words do people simply adapt to changes -- as in the fixed bayesian learner and moving average approaches -- or do they detect them?
+Strict year-to-year updating can result in overly conservative risk perceptions, suggesting people are slow to change their beliefs when in reality they often quickly update them (Bissiri 2010).
+Indeed, the "forgetful bayesian brain" model seems to perform better, with a dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
+
+A simple way to capture this behavior computaitonally is with satisficing learning (Crandall and goodrich 2008).
+The basic win-stay lose-shift algorithm works well (Bonawitz et al 2011).
+As long as things are going good and agents don't experience any food shortfalls, they are static bayesina learners, making decisions from a prior belief that is updated by only one observation each year.
+But if the agent does experience to many shortfalls, they will realise their prior beliefs are no longer relevant and they "throw out" their prior and reset to a diffuse prior.
 
 
 # The Model
@@ -535,7 +517,9 @@ Statistically downscaling palaeoclimate simulations and coupling them to game th
 
 Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
 
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+\setlength{\parskip}{8pt}
 
 
 # References
-
