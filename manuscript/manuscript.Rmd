@@ -217,14 +217,14 @@ These agents develop beliefs about the risk of drought in their environment thro
 Each agent's perceived drought risks will change their subjective expected crop yields from planting different ratios of wheat to barley.
 
 Bayesian brains
-We can efficiently simulate these population-level risks perceptions simulating a population of agents with Bayesian brains (Kahvalti et al 2019 double check). Bayesian learning allows for a minimal representation of the environemnt, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
+We can efficiently simulate these population-level risk perceptions in a population of agents with Bayesian brains (Kahvalti et al 2019 double check). Bayesian learning allows for a minimal representation of the environemnt, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
 Our brains do not record every bit of perceived informaiton in memory, rather it stores a "compact encoding" of that information which it uses for future decisions. Even if individuals aren't -- consciously or unconsciously --- making these calculations -- the basic algorithmic problem faced by the brain, and solutions it has evolved, reflect the same basic sets of constraints (Sanborn and Chater 2016).
 
 Bayesian learning from bernoulli observations.
 We can treat this problem elegantly using bayesian statistics using online bayesian learning from bernoulli objersbations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. bernoulli distribution) with paramter theta reprenting the risk of drought. Uncertainty in the value of theta can be represented with a beta distribution, constrained between 0 and 1 (Figure XX). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief. What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely. As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of experience. 
 
 A simple "fixed" bayesian learner thus gets more certain with age.
-For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optomisitc when things have really changed for the worse, and alternately being two conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
+For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
 
 ```{r, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
 prior <- function(m, n) {
@@ -234,12 +234,25 @@ prior <- function(m, n) {
 }
 
 tibble(Age = seq(5, 50, 5),
-       risk = .5) %>%
+       risk = 0.5) %>%
   mutate(belief = map2(risk, Age, ~prior(.x, .y))) %>%
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
   geom_line(aes(group = Age, color = Age), size = 1.2, alpha = .8) +
   scale_color_viridis_c(guide = 'legend') +
+  labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
+  theme_classic()
+
+tibble(alpha = c(15 * 0.2, 50 * 0.2, 15 * 0.2 + 25 * 0.4, 50 * 0.2 + 25 * 0.4),
+       beta = c(15 * 0.8, 50 * 0.8, 15 * 0.8 + 25 * 0.6, 50 * 0.8 + 25 * 0.6),
+       time = c('before', 'before', 'after', 'after'),
+       age = c('young', 'old', 'young', 'old')) %>%
+  mutate(belief = map2(alpha, beta, ~prior2(.x, .y))) %>%
+  unnest(cols = c(belief)) %>%
+  ggplot(aes(x, y)) +
+  geom_line(aes(group = time, color = time), size = 1.2, alpha = .8) +
+  scale_color_viridis_d(guide = 'legend') +
+  facet_wrap(~age) +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
   theme_classic()
 ```
@@ -251,7 +264,7 @@ In other words do people simply adapt to changes -- as in the fixed bayesian lea
 Strict year-to-year updating can result in overly conservative risk perceptions, suggesting people are slow to change their beliefs when in reality they often quickly update them (Bissiri 2010).
 Indeed, the "forgetful bayesian brain" model seems to perform better, with a dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
 
-A simple way to capture this behavior computaitonally is with satisficing learning (Crandall and goodrich 2008).
+A simple way to capture this behavior computationally is with satisficing learning (Crandall and goodrich 2008).
 The basic win-stay lose-shift algorithm works well (Bonawitz et al 2011).
 As long as things are going good and agents don't experience any food shortfalls, they are static bayesina learners, making decisions from a prior belief that is updated by only one observation each year.
 But if the agent does experience to many shortfalls, they will realise their prior beliefs are no longer relevant and they "throw out" their prior and reset to a diffuse prior.
@@ -321,39 +334,26 @@ learn2 <- function(agents, drought) {
 ```
 
 
-Run an experiment. Simulate a time series with varying drought frequency. This is a stepwise nonstationary process
-```{r}
-droughts <- c((runif(25) < .1),(runif(25) < .5), runif(50) < .2)
-```
+Simulate a time series with varying drought frequency. This is a stepwise nonstationary process. Setup an experiment exploring 6 scenarios.
 
-```{r}
+
+This suggests that people are more in danger of not realizing conditions are improving when they actually have -- the opportunity cost -- rather than failing to realize the change in the firstplace.
+The law of small numbers is very important here. The range of each person's experience is so small -- every individual's perceived risk will be a small and noisy sample of the true value.
+Older people are much more certain, even though they are wrong.
+```{r, fig.height=3, fig.width=5}
 prior2 <- function(a, b) {
   domain <- seq(0,1,0.005)
   val <- dbeta(domain, a, b)
   tibble('x' = domain, 'y' = val)
 }
 
-accumulate(droughts, 
-           ~mutate(.x, alpha = .y + alpha, beta = beta + 1 - .y), 
-           .init = tibble(alpha = 1.5, beta = 1.5)) %>%
-  bind_rows(.id = 'time') %>%
-    mutate(time = as.numeric(time), belief = map2(alpha, beta, ~prior2(.x, .y))) %>%
-  unnest(cols = c(belief)) %>%
-  ggplot(aes(x, y)) +
-  geom_line(aes(color = time, group = time), size = .8) +
-    geom_vline(xintercept = c(0.1, 0.5, 0.2), linetype = 2, color = 'red', size = .8) +
-  scale_color_viridis_c() +
-  theme_bw() +
-  ggtitle('Subjective beliefs about drought risk', 'Beta prior, varying sample size')
+droughts <-   c(runif(40) < 0.2, runif(20) < 0.4, runif(40) < 0.2)
 ```
+
+
 
 ```{r}
 simulation1 <- accumulate(droughts, ~learn1(.x, .y), .init = agents) %>% 
-  bind_rows(.id = 'time') %>%
-  mutate(time = as.numeric(time)) %>%
-  filter(time != 1)
-
-simulation2 <- accumulate(droughts, ~learn2(.x, .y), .init = agents) %>% 
   bind_rows(.id = 'time') %>%
   mutate(time = as.numeric(time)) %>%
   filter(time != 1)
@@ -361,14 +361,19 @@ simulation2 <- accumulate(droughts, ~learn2(.x, .y), .init = agents) %>%
 
 Redo these plots so its a single person, one who was born in a drought period then experiences an ameliorarion and another who experiences a shift to drought conditions later in life? basically this section neds to work more with individuals and explore that stuff
 
-```{r}
+
+
+```{r, fig.height = 6, fig.width = 6}
 test1 <- tibble(time = 1:100,
-       risk = c(rep(0.1, 25), rep(0.5, 25), rep(0.2, 50)))
+       exp1 = rep(0.2, 100),
+       exp2 = rep(0.4, 100),
+       exp3 = c(rep(0.2, )))
 
 ggplot(simulation1, aes(time, risk)) +
-  geom_line(data = test1) +
+  #geom_line(data = test1) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  geom_smooth(color = 'darkorange') +
   theme_classic()
 ```
 
