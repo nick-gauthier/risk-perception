@@ -242,6 +242,22 @@ tibble(Age = seq(5, 50, 5),
   scale_color_viridis_c(guide = 'legend') +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
   theme_classic()
+```
+
+
+But what if nature isn't stationary?
+That is, what if the risk of a drought, theta, is not a constant but rather varies unpredictably in time?
+The statistical problem shifts then to one of change detection (o'reilly 2013, gallistel et al 2014).
+In other words do people simply adapt to changes -- as in the fixed bayesian learner and moving average approaches -- or do they detect them?
+Strict year-to-year updating can result in overly conservative risk perceptions, suggesting people are slow to change their beliefs when in reality they often quickly update them (Bissiri 2010).
+Indeed, the "forgetful bayesian brain" model seems to perform better, with a dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
+
+```{r, fig.width = 5, fig.height = 3, fig.cap = "Change in perceived drought risks in an older (50) and younger (15) agent before and after a 25-year dry period."}
+prior2 <- function(a, b) {
+  domain <- seq(0,1,0.005)
+  val <- dbeta(domain, a, b)
+  tibble('x' = domain, 'y' = val)
+}
 
 tibble(alpha = c(15 * 0.2, 50 * 0.2, 15 * 0.2 + 25 * 0.4, 50 * 0.2 + 25 * 0.4),
        beta = c(15 * 0.8, 50 * 0.8, 15 * 0.8 + 25 * 0.6, 50 * 0.8 + 25 * 0.6),
@@ -251,23 +267,12 @@ tibble(alpha = c(15 * 0.2, 50 * 0.2, 15 * 0.2 + 25 * 0.4, 50 * 0.2 + 25 * 0.4),
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
   geom_line(aes(group = time, color = time), size = 1.2, alpha = .8) +
-  scale_color_viridis_d(guide = 'legend') +
+  #scale_color_viridis_d(guide = 'legend') +
   facet_wrap(~age) +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
   theme_classic()
 ```
 
-But what if nature isn't stationary?
-That is, what if the risk of a drought, theta, is not a constant but rather varies unpredictably in time?
-The statistical problem shifts then to one of change detection (o'reilly 2013, gallistel et al 2014).
-In other words do people simply adapt to changes -- as in the fixed bayesian learner and moving average approaches -- or do they detect them?
-Strict year-to-year updating can result in overly conservative risk perceptions, suggesting people are slow to change their beliefs when in reality they often quickly update them (Bissiri 2010).
-Indeed, the "forgetful bayesian brain" model seems to perform better, with a dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
-
-A simple way to capture this behavior computationally is with satisficing learning (Crandall and goodrich 2008).
-The basic win-stay lose-shift algorithm works well (Bonawitz et al 2011).
-As long as things are going good and agents don't experience any food shortfalls, they are static bayesina learners, making decisions from a prior belief that is updated by only one observation each year.
-But if the agent does experience to many shortfalls, they will realise their prior beliefs are no longer relevant and they "throw out" their prior and reset to a diffuse prior.
 
 
 # The Model
@@ -306,29 +311,6 @@ learn1 <- function(agents, drought) {
            risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
 }
 
-learn2 <- function(agents, drought) {
-  if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
-  if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
-
-  agents %>%
-    # farmer's turn to decide what to plant
-      mutate(yield_exp = expected_yield(risk),
-         barley_exp = expected_yield_barley(risk),
-         wheat_exp = expected_yield_wheat(risk),
-         expected_yield = barley_exp + wheat_exp,
-         crop = case_when(barley_exp > wheat_exp ~ 'barley',
-                              barley_exp < wheat_exp ~ 'wheat',
-                              barley_exp == wheat_exp ~ 'either'),
-         prediction = map2(alpha, beta, ~rbeta(100, .x, .y)), # sample 100 as if agent is thinking in percentages
-         wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
-      select(-prediction) %>%
-  # nature's turn to decide realized yields
-    mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
-           alpha = if_else(payoff < .5, 1, drought + alpha),
-           beta = if_else(payoff < .5, 1, beta + 1 - drought),
-          # mu = alpha / (alpha + beta),
-           risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
-}
 
 # or keep risk parameter constant and reduce the effective sample size, in other words keep the ratio of alpha to beta but decrease the absoulte value
 ```
@@ -340,12 +322,7 @@ Simulate a time series with varying drought frequency. This is a stepwise nonsta
 This suggests that people are more in danger of not realizing conditions are improving when they actually have -- the opportunity cost -- rather than failing to realize the change in the firstplace.
 The law of small numbers is very important here. The range of each person's experience is so small -- every individual's perceived risk will be a small and noisy sample of the true value.
 Older people are much more certain, even though they are wrong.
-```{r, fig.height=3, fig.width=5}
-prior2 <- function(a, b) {
-  domain <- seq(0,1,0.005)
-  val <- dbeta(domain, a, b)
-  tibble('x' = domain, 'y' = val)
-}
+```{r}
 
 droughts <-   c(runif(40) < 0.2, runif(20) < 0.4, runif(40) < 0.2)
 ```
