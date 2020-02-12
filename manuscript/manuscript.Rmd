@@ -41,7 +41,6 @@ knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 library(raster)
 library(ncdf4)
 library(tidyverse)
-set.seed(1000)
 ```
 
 
@@ -143,7 +142,7 @@ tibble(risk = seq(0, 1, .1),
 If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility. If the probability distributin of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distirubtion of nature's moves. In the language of game theory, this strategy is known as a "game of ficticious play" against nature. This is an effective risk-managing strategy, but like all similar strategies that adapt to a specific pattern of variability, it is vulnerable to changes in the pattern of variability (Janssen eta al 2007)
 This strategy works well when the environment is stationary -- nature plays from a fixed probability distirubtion, but is vulnerable to environmental nonstationarity. That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because you're too stuck in your ways while the world changes around you. Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
 
-# Drought risks in eastern Mediterranean {#sec:2}
+# Holocene drought risks in the eastern Mediterranean {#sec:2}
 
 Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research. TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of climate forcings (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
 
@@ -205,26 +204,23 @@ sim_past %>%
 
 # The dynamics of risk perception {#sec:3}
 
-Risk Perception
 In order to manage risk, decision-makers must be perceive what exactly that risk is in the local environment.
 An individual's perceived risk entails more than simply the "objective" risk in the external environment [@Tucker2013].
 A person's perceived risk depends in large part on their past experience, and how those experiences shape their expectations for the future.
 Likewise, the social responses to risk will refelct the distribution of perceived risks in a population, and by extension the collective memory of past droughts will have consequences for the population's survival and evolution.
 
-Belief-based agents
-We can capture the influences of risk perception computationally by simulating a population of "belief-based agents".
+We can capture the influences of risk perception computationally by simulating a population of "belief-based agents."
 These agents develop beliefs about the risk of drought in their environment through personal experience. 
 Each agent's perceived drought risks will change their subjective expected crop yields from planting different ratios of wheat to barley.
 
-Bayesian brains
+## Bayesian brains
 We can efficiently simulate these population-level risk perceptions in a population of agents with Bayesian brains (Kahvalti et al 2019 double check). Bayesian learning allows for a minimal representation of the environemnt, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
 Our brains do not record every bit of perceived informaiton in memory, rather it stores a "compact encoding" of that information which it uses for future decisions. Even if individuals aren't -- consciously or unconsciously --- making these calculations -- the basic algorithmic problem faced by the brain, and solutions it has evolved, reflect the same basic sets of constraints (Sanborn and Chater 2016).
 
-Bayesian learning from bernoulli observations.
+### Bayesian learning from bernoulli observations
 We can treat this problem elegantly using bayesian statistics using online bayesian learning from bernoulli objersbations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. bernoulli distribution) with paramter theta reprenting the risk of drought. Uncertainty in the value of theta can be represented with a beta distribution, constrained between 0 and 1 (Figure XX). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief. What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely. As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of experience. 
 
-A simple "fixed" bayesian learner thus gets more certain with age.
-For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
+A simple "fixed" bayesian learner thus gets more certain with age. For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
 
 ```{r, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
 prior <- function(m, n) {
@@ -245,7 +241,7 @@ tibble(Age = seq(5, 50, 5),
 ```
 
 
-But what if nature isn't stationary?
+### The problem of nonstationarity
 That is, what if the risk of a drought, theta, is not a constant but rather varies unpredictably in time?
 The statistical problem shifts then to one of change detection (o'reilly 2013, gallistel et al 2014).
 In other words do people simply adapt to changes -- as in the fixed bayesian learner and moving average approaches -- or do they detect them?
@@ -275,19 +271,22 @@ tibble(alpha = c(15 * 0.2, 50 * 0.2, 15 * 0.2 + 25 * 0.4, 50 * 0.2 + 25 * 0.4),
 
 
 
-# The Model
+# Risk perception in a Mediterranean agroecosystem
+
+So what are the consequences of these cognitive processes for early farmers in the Mediterranean.
+
 ```{r}
 agents <- tibble(id = 1:150, 
                  alpha = 1.5,
                  beta = 1.5,
                  risk = alpha / (alpha + beta),
-                 age = sample.int(80, size = 150, replace = TRUE),
+                 #age = sample.int(80, size = 150, replace = TRUE),
                  crop = 'barley')
 ```
 
 
 ```{r}
-learn1 <- function(agents, drought) {
+learn <- function(agents, drought) {
   if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
   if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
 
@@ -310,11 +309,7 @@ learn1 <- function(agents, drought) {
           # mu = alpha / (alpha + beta),
            risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
 }
-
-
-# or keep risk parameter constant and reduce the effective sample size, in other words keep the ratio of alpha to beta but decrease the absoulte value
 ```
-
 
 Simulate a time series with varying drought frequency. This is a stepwise nonstationary process. Setup an experiment exploring 6 scenarios.
 
@@ -322,56 +317,42 @@ Simulate a time series with varying drought frequency. This is a stepwise nonsta
 This suggests that people are more in danger of not realizing conditions are improving when they actually have -- the opportunity cost -- rather than failing to realize the change in the firstplace.
 The law of small numbers is very important here. The range of each person's experience is so small -- every individual's perceived risk will be a small and noisy sample of the true value.
 Older people are much more certain, even though they are wrong.
-```{r}
 
-droughts <-   c(runif(40) < 0.2, runif(20) < 0.4, runif(40) < 0.2)
+```{r}
+make_droughts <- function() c(runif(25) < 0.2, runif(25) < 0.4, runif(25) < 0.2)
+
+set.seed(11111)
+droughts <- make_droughts()
 ```
 
 
 
 ```{r}
-simulation1 <- accumulate(droughts, ~learn1(.x, .y), .init = agents) %>% 
-  bind_rows(.id = 'time') %>%
-  mutate(time = as.numeric(time)) %>%
-  filter(time != 1)
+run_sim <- function(droughts) {
+  accumulate(droughts, ~learn(.x, .y), .init = agents) %>% 
+    bind_rows(.id = 'time') %>%
+    mutate(time = as.numeric(time)) %>%
+    filter(time > 1)
+}
+
+sim1 <- run_sim(droughts)
 ```
 
-Redo these plots so its a single person, one who was born in a drought period then experiences an ameliorarion and another who experiences a shift to drought conditions later in life? basically this section neds to work more with individuals and explore that stuff
 
+```{r, fig.height = 4, fig.width = 6}
+test1 <- tibble(time = 1:75,
+       risk = c(rep(0.2, 25), rep(0.4, 25), rep(0.2, 25)))
 
-
-```{r, fig.height = 6, fig.width = 6}
-test1 <- tibble(time = 1:100,
-       exp1 = rep(0.2, 100),
-       exp2 = rep(0.4, 100),
-       exp3 = c(rep(0.2, )))
-
-ggplot(simulation1, aes(time, risk)) +
-  #geom_line(data = test1) +
-  geom_point(alpha = .1) +
-  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
-  geom_smooth(color = 'darkorange') +
-  theme_classic()
-```
-
-```{r}
-ggplot(simulation2, aes(time, risk)) +
+ggplot(sim1, aes(time, risk)) +
   geom_line(data = test1) +
   geom_point(alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
-  theme_classic()
-
-```
-
-```{r}
-ggplot(simulation2, aes(time, risk)) +
-  geom_point(alpha = .1) +
-  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+ # geom_smooth(color = 'darkorange') +
   theme_classic()
 ```
 
 ```{r}
-simulation1 %>%
+sim1 %>%
   group_by(time, crop) %>%
   tally() %>%
 ggplot(aes(time, n, fill = crop)) +
@@ -380,55 +361,48 @@ ggplot(aes(time, n, fill = crop)) +
   theme_classic()
 ```
 
+
 ```{r}
-simulation2 %>%
-  group_by(time, crop) %>%
-  tally() %>%
-ggplot(aes(time, n, fill = crop)) +
-  geom_bar(width = 1, stat = 'identity', position = 'fill') +
-  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
-  theme_classic()
+library(furrr)
+plan(multisession)
+
+sim2 <- tibble(rep = 1:500,
+       droughts = replicate(500, make_droughts(), simplify = FALSE)) %>%
+  mutate(results = future_map(droughts, run_sim)) %>%
+  select(-droughts) %>%
+  unnest(results)
 ```
+
 
 These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
 
-Note in these plots above and below we're summing all the wheat and barley in the population, compared to below which shows the wheat proportions of individuals
-```{r}
-ggplot(simulation1, aes(time, wheat_prop)) +
-  geom_point(alpha = .3) +
-  theme_classic()
+Note in these plots above and below we're summing all the wheat and barley in the population, compared to below which shows the wheat proportions of individuals.
 
-ggplot(simulation2, aes(time, wheat_prop)) +
-  geom_point(alpha = .3) +
-  theme_classic()
+```{r}
+sim2 %>%
+  group_by(rep, time) %>%
+  summarise(test = mean(payoff))%>%
+  summarise(test = mean(test)) %>%
+  #summarise(famine = sum(payoff == 0) / 150) %>%
+  #summarise(famine = mean(famine)) %>%
+  ggplot(aes(test)) +
+  geom_histogram()
+#ggplot(aes(time, famine)) +
+#  geom_line() +
+#  theme_classic()
+
+
+sim2 %>%
+  group_by(rep, time) %>%
+  summarise(test = mean(payoff))%>%
+  ggplot(aes(time, test, color = rep)) +
+  geom_point(alpha = .5)
 ```
 
 ```{r}
-simulation1 %>%
-  group_by(time) %>%
-  summarise(famine = sum(payoff == 0)) %>%
-ggplot(aes(time, famine)) +
-  geom_line() +
-  theme_classic()
-simulation2 %>%
-  group_by(time) %>%
-  summarise(famine = sum(payoff == 0, na.rm = TRUE)) %>%
-ggplot(aes(time, famine)) +
-  geom_line() +
-  theme_classic()
-```
-
-```{r}
-simulation1 %>%
+sim1 %>%
   group_by(time) %>%
   summarise(payoff = mean(payoff)) %>%
-ggplot(aes(time,payoff)) +
-  geom_point(aes(color = time)) +
-  theme_classic()
-
-simulation2 %>%
-  group_by(time) %>%
-  summarise(payoff = mean(payoff, na.rm = TRUE)) %>%
 ggplot(aes(time,payoff)) +
   geom_point(aes(color = time)) +
   theme_classic()
@@ -436,22 +410,13 @@ ggplot(aes(time,payoff)) +
 
 ```{r}
 library(ggridges)
-simulation1 %>%
-  mutate(time_step = 5 * round(time/5),
-         famine = payoff == 0) %>%
-  ggplot(aes(wheat_prop, as.factor(time_step))) +
-  geom_density_ridges(rel_min_height = 0.005) +
-  theme_ridges()
-
-simulation2 %>%
+sim1 %>%
   mutate(time_step = 5 * round(time/5),
          famine = payoff == 0) %>%
   ggplot(aes(wheat_prop, as.factor(time_step))) +
   geom_density_ridges(rel_min_height = 0.005) +
   theme_ridges()
 ```
-
-
 
 
 
@@ -480,7 +445,7 @@ tibble(drought = droughts,
 ```
 
 
-\section{Results and Discussion}
+# Discussion and Conclusions
 
 
 The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
