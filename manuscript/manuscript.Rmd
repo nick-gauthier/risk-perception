@@ -41,6 +41,7 @@ knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 library(raster)
 library(ncdf4)
 library(tidyverse)
+library(patchwork)
 ```
 
 
@@ -248,7 +249,7 @@ In other words do people simply adapt to changes -- as in the fixed bayesian lea
 Strict year-to-year updating can result in overly conservative risk perceptions, suggesting people are slow to change their beliefs when in reality they often quickly update them (Bissiri 2010).
 Indeed, the "forgetful bayesian brain" model seems to perform better, with a dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
 
-```{r, fig.width = 5, fig.height = 3, fig.cap = "Change in perceived drought risks in an older (50) and younger (15) agent before and after a 25-year dry period."}
+```{r, fig.width = 6, fig.height = 3, fig.cap = "Change in perceived drought risks in an older (50) and younger (15) agent before and after a 25-year dry period."}
 prior2 <- function(a, b) {
   domain <- seq(0,1,0.005)
   val <- dbeta(domain, a, b)
@@ -257,16 +258,19 @@ prior2 <- function(a, b) {
 
 tibble(alpha = c(15 * 0.2, 50 * 0.2, 15 * 0.2 + 25 * 0.4, 50 * 0.2 + 25 * 0.4),
        beta = c(15 * 0.8, 50 * 0.8, 15 * 0.8 + 25 * 0.6, 50 * 0.8 + 25 * 0.6),
-       time = c('before', 'before', 'after', 'after'),
-       age = c('young', 'old', 'young', 'old')) %>%
+       time = factor(c('prior', 'prior', 'posterior', 'posterior'), levels = c('prior', 'posterior')),
+       age = factor(c('15-year-old agent', '50-year-old agent', '15-year-old agent', '50-year-old agent'), levels = c('15-year-old agent', '50-year-old agent'))) %>%
   mutate(belief = map2(alpha, beta, ~prior2(.x, .y))) %>%
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
   geom_line(aes(group = time, color = time), size = 1.2, alpha = .8) +
-  #scale_color_viridis_d(guide = 'legend') +
-  facet_wrap(~age) +
-  labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
-  theme_classic()
+scale_color_manual(values = c('purple', 'orange'), name = '') +
+    facet_wrap(~age, strip.position = 'bottom') +
+    theme_classic() +
+  theme(strip.background = element_blank(),
+        legend.position = c(.43, .5),
+        strip.placement = "outside") +
+  labs(x = expression('Drought probability (' * theta * ')'), y = 'Density')
 ```
 
 
@@ -339,30 +343,28 @@ sim1 <- run_sim(droughts)
 ```
 
 
-```{r, fig.height = 4, fig.width = 6}
-test1 <- tibble(time = 1:75,
-       risk = c(rep(0.2, 25), rep(0.4, 25), rep(0.2, 25)))
+```{r, fig.height = 8, fig.width = 7}
 
-ggplot(sim1, aes(time, risk)) +
-  geom_line(data = test1) +
-  geom_point(alpha = .1) +
-  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
- # geom_smooth(color = 'darkorange') +
+a <- ggplot(sim1) +
+  geom_rect(aes(xmin = 25, xmax = 50, ymin = -Inf, ymax = Inf), fill = NA, color = 'black', alpha = .002) +
+  geom_point(aes(time, risk), alpha = .1) +
+  geom_hline(yintercept = indiff$risk, color = 'red') +
   theme_classic()
-```
 
-```{r}
-sim1 %>%
+b <- sim1 %>%
   group_by(time, crop) %>%
   tally() %>%
 ggplot(aes(time, n, fill = crop)) +
   geom_bar(width = 1, stat = 'identity', position = 'fill') +
   scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
   theme_classic()
+
+a / b
 ```
 
 
-```{r}
+
+```{reval=FALSE}
 library(furrr)
 plan(multisession)
 
