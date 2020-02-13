@@ -136,7 +136,8 @@ tibble(risk = seq(0, 1, .1),
   geom_point(data = indiff, color = 'black', size = 3) +
   geom_text(data = indiff, label = indiff_label, nudge_x = 0.1, nudge_y = 0.1) +
   theme_classic() +
-  scale_color_manual(name = 'Crop', values = c('darkgoldenrod', 'lightgoldenrod')) +
+  #scale_color_manual(name = 'Crop', values = c('darkgoldenrod', 'lightgoldenrod')) +
+  scale_color_manual(values = c('#e66101', '#5e3c99'), name = '') +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Expected yield')
 ```
 
@@ -193,11 +194,12 @@ sim_past %>%
          year = time_step * 50) %>%
   group_by(year) %>%
   summarise(risk = sum(drought) / 50) %>%
+  filter(year != min(year)) %>%
   ggplot(aes(year, risk, fill = risk, color = risk)) +
   geom_hline(yintercept = indiff$risk, color = 'black', linetype = 2, size = 1) +
   geom_col()  +
-  scale_fill_distiller(palette = 'YlOrRd', direction = 1) +
-  scale_color_distiller(palette = 'YlOrRd', direction = 1)+
+  scale_fill_distiller(palette = 'PuOr') +
+  scale_color_distiller(palette = 'PuOr')+
   theme_minimal() +
   labs(x = 'Years BP', y = 'Drought risk')  + theme(legend.position = "none")
 ```
@@ -236,7 +238,7 @@ tibble(Age = seq(5, 50, 5),
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
   geom_line(aes(group = Age, color = Age), size = 1.2, alpha = .8) +
-  scale_color_viridis_c(guide = 'legend') +
+  scale_color_distiller(palette = 'PuOr', guide = 'legend') +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
   theme_classic()
 ```
@@ -264,7 +266,7 @@ tibble(alpha = c(15 * 0.2, 50 * 0.2, 15 * 0.2 + 25 * 0.4, 50 * 0.2 + 25 * 0.4),
   unnest(cols = c(belief)) %>%
   ggplot(aes(x, y)) +
   geom_line(aes(group = time, color = time), size = 1.2, alpha = .8) +
-scale_color_manual(values = c('purple', 'orange'), name = '') +
+scale_color_manual(values = c('#5e3c99', '#e66101'), name = '') +
     facet_wrap(~age, strip.position = 'bottom') +
     theme_classic() +
   theme(strip.background = element_blank(),
@@ -346,17 +348,21 @@ sim1 <- run_sim(droughts)
 ```{r, fig.height = 8, fig.width = 7}
 
 a <- ggplot(sim1) +
-  geom_rect(aes(xmin = 25, xmax = 50, ymin = -Inf, ymax = Inf), fill = NA, color = 'black', alpha = .002) +
+  geom_rect(aes(xmin = 25, xmax = 50, ymin = -Inf, ymax = Inf), fill = 'lightgray', alpha = .1) +
   geom_point(aes(time, risk), alpha = .1) +
-  geom_hline(yintercept = indiff$risk, color = 'red') +
-  theme_classic()
+  geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
+  theme_classic() +
+  labs(x = 'years', y = 'Perceived drought risk')
 
 b <- sim1 %>%
   group_by(time, crop) %>%
   tally() %>%
 ggplot(aes(time, n, fill = crop)) +
   geom_bar(width = 1, stat = 'identity', position = 'fill') +
-  scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
+  #scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
+  #  scale_fill_manual(values = c('#e66101', '#5e3c99'), name = '') +
+    scale_fill_manual(values = c('#f1a340', '#998ec3'), name = '') + 
+  labs(x = 'Years', y = 'Wheat proportion') +
   theme_classic()
 
 a / b
