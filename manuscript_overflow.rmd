@@ -1,0 +1,76 @@
+---
+title: "manuscript overflow"
+author: "Nick Gauthier"
+date: "2/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+sim2 %>%
+  group_by(rep, time) %>%
+  summarise(test = mean(payoff))%>%
+  summarise(test = mean(test)) %>%
+  #summarise(famine = sum(payoff == 0) / 150) %>%
+  #summarise(famine = mean(famine)) %>%
+  ggplot(aes(test)) +
+  geom_histogram()
+#ggplot(aes(time, famine)) +
+#  geom_line() +
+#  theme_classic()
+
+
+sim2 %>%
+  group_by(rep, time) %>%
+  summarise(test = mean(payoff))%>%
+  ggplot(aes(time, test, color = rep)) +
+  geom_point(alpha = .5)
+```
+
+```{r}
+sim1 %>%
+  group_by(time) %>%
+  summarise(payoff = mean(payoff)) %>%
+ggplot(aes(time,payoff)) +
+  geom_point(aes(color = time)) +
+  theme_classic()
+```
+
+```{r}
+library(ggridges)
+sim1 %>%
+  mutate(time_step = 5 * round(time/5),
+         famine = payoff == 0) %>%
+  ggplot(aes(wheat_prop, as.factor(time_step))) +
+  geom_density_ridges(rel_min_height = 0.005) +
+  theme_ridges()
+```
+
+
+
+make this a function to calculate payoffs for all wheat or all barley strategies as a comparison
+```{r}
+tibble(drought = droughts,
+       barley = if_else(droughts == FALSE, barley_normal, barley_dry),
+       wheat = if_else(droughts == FALSE, wheat_normal, wheat_dry),
+       equal = (barley + wheat) / 2) %>%
+  mutate(time = 1:n()) %>%
+  gather(crop, yield, barley:equal) %>%
+  ggplot(aes(time, yield, group = crop, color = crop)) +
+  geom_point()
+```
+
+```{r}
+tibble(drought = droughts,
+       barley = if_else(droughts == FALSE, barley_normal, barley_dry),
+       wheat = if_else(droughts == FALSE, wheat_normal, wheat_dry),
+       equal = (barley + wheat) / 2) %>%
+  mutate(time = 1:n()) %>%
+  gather(crop, yield, barley:equal) %>%
+  mutate(famine = yield == 0) %>%
+  ggplot(aes(time, famine, group = crop, color = crop)) +
+  geom_line()
+```
