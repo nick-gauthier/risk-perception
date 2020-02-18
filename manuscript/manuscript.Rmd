@@ -34,6 +34,9 @@ bibliography: bibliography.bib
 bibstyle: spbasic
 # bibstyle options spbasic(default), spphys, spmpsci
 output: rticles::springer_article
+header-includes:
+- \usepackage{float}
+- \floatplacement{figure}{tb}
 ---
 
 ```{r setup, include=FALSE}
@@ -138,7 +141,7 @@ tibble(risk = seq(0, 1, .1),
   theme_classic() +
   #scale_color_manual(name = 'Crop', values = c('darkgoldenrod', 'lightgoldenrod')) +
   scale_color_manual(values = c('#e66101', '#5e3c99'), name = '') +
-  labs(x = expression('Drought probability (' * theta * ')'), y = 'Expected yield')
+  labs(x = expression('Drought probability (' * theta * ')'), y = 'Expected yield (t/ha)')
 ```
 
 If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility. If the probability distributin of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distirubtion of nature's moves. In the language of game theory, this strategy is known as a "game of ficticious play" against nature. This is an effective risk-managing strategy, but like all similar strategies that adapt to a specific pattern of variability, it is vulnerable to changes in the pattern of variability (Janssen eta al 2007)
@@ -187,7 +190,7 @@ sim_past <- left_join(precc, precl, by = 'time') %>%
 ```
 
 
-```{r, fig.height =2, fig.width = 6, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period. The dashed line indicates the level of risk beyond which one would plant barley over wheat to maximize subjective expected yields, given the payoffs defined in Table 1.'}
+```{r, fig.height = 2, fig.width = 6, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period. The dashed line indicates the level of risk beyond which one would plant barley over wheat to maximize subjective expected yields, given the payoffs defined in Table 1.'}
 sim_past %>%
   filter(between(water_year, -9500, -5500)) %>%
   mutate(time_step = ceiling(water_year / 50),
@@ -220,10 +223,6 @@ Each agent's perceived drought risks will change their subjective expected crop 
 We can efficiently simulate these population-level risk perceptions in a population of agents with Bayesian brains (Kahvalti et al 2019 double check). Bayesian learning allows for a minimal representation of the environemnt, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
 Our brains do not record every bit of perceived informaiton in memory, rather it stores a "compact encoding" of that information which it uses for future decisions. Even if individuals aren't -- consciously or unconsciously --- making these calculations -- the basic algorithmic problem faced by the brain, and solutions it has evolved, reflect the same basic sets of constraints (Sanborn and Chater 2016).
 
-### Bayesian learning from bernoulli observations
-We can treat this problem elegantly using bayesian statistics using online bayesian learning from bernoulli objersbations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. bernoulli distribution) with paramter theta reprenting the risk of drought. Uncertainty in the value of theta can be represented with a beta distribution, constrained between 0 and 1 (Figure XX). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief. What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely. As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of experience. 
-
-A simple "fixed" bayesian learner thus gets more certain with age. For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
 
 ```{r, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
 prior <- function(m, n) {
@@ -242,6 +241,12 @@ tibble(Age = seq(5, 50, 5),
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
   theme_classic()
 ```
+
+### Bayesian learning from bernoulli observations
+We can treat this problem elegantly using bayesian statistics using online bayesian learning from bernoulli objersbations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. bernoulli distribution) with paramter theta reprenting the risk of drought. Uncertainty in the value of theta can be represented with a beta distribution, constrained between 0 and 1 (Figure XX). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief. What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely. As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of experience. 
+
+A simple "fixed" bayesian learner thus gets more certain with age. For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
+
 
 
 ### The problem of nonstationarity
@@ -274,10 +279,6 @@ scale_color_manual(values = c('#5e3c99', '#e66101'), name = '') +
         strip.placement = "outside") +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density')
 ```
-
-
-
-# Risk perception in a Mediterranean agroecosystem
 
 So what are the consequences of these cognitive processes for early farmers in the Mediterranean.
 
@@ -357,28 +358,16 @@ a <- ggplot(sim1) +
 b <- sim1 %>%
   group_by(time, crop) %>%
   tally() %>%
-ggplot(aes(time, n, fill = crop)) +
+ggplot(aes(time, n, fill = crop, color = crop)) +
   geom_bar(width = 1, stat = 'identity', position = 'fill') +
   #scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
   #  scale_fill_manual(values = c('#e66101', '#5e3c99'), name = '') +
     scale_fill_manual(values = c('#f1a340', '#998ec3'), name = '') + 
-  labs(x = 'Years', y = 'Wheat proportion') +
+    scale_color_manual(values = c('#f1a340', '#998ec3'), name = '') + 
+    labs(x = 'Years', y = 'Wheat proportion') +
   theme_classic()
 
 a / b
-```
-
-
-
-```{reval=FALSE}
-library(furrr)
-plan(multisession)
-
-sim2 <- tibble(rep = 1:500,
-       droughts = replicate(500, make_droughts(), simplify = FALSE)) %>%
-  mutate(results = future_map(droughts, run_sim)) %>%
-  select(-droughts) %>%
-  unnest(results)
 ```
 
 
