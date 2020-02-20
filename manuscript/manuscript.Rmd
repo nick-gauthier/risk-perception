@@ -22,7 +22,10 @@ abstract: |
 bibliography: bibliography.bib
 bibstyle: spbasic
 # bibstyle options spbasic(default), spphys, spmpsci
-output: rticles::springer_article
+output:
+  bookdown::pdf_book:
+    base_format: rticles::springer_article
+    number_sections: yes
 header-includes:
 - \usepackage{float}
 - \floatplacement{figure}{tb}
@@ -139,22 +142,17 @@ This strategy works well when the environment is stationary -- nature plays from
 
 # Modeling perceived risks with Bayesian agents {#sec:3}
 
-In order to manage risk, decision-makers must be perceive what exactly that risk is in the local environment.
-An individual's perceived risk entails more than simply the "objective" risk in the external environment [@Tucker2013].
-A person's perceived risk depends in large part on their past experience, and how those experiences shape their expectations for the future.
-Likewise, the social responses to risk will refelct the distribution of perceived risks in a population, and by extension the collective memory of past droughts will have consequences for the population's survival and evolution.
+In order to manage risk, decision-makers must be perceive what exactly that risk is in the local environment. An individual's perceived risk entails more than simply the "objective" risk in the external environment [@Tucker2013]. A person's perceived risk depends in large part on their past experience, and how those experiences shape their expectations for the future. Likewise, the social responses to risk will refelct the distribution of perceived risks in a population, and by extension the collective memory of past droughts will have consequences for the population's survival and evolution.
 
 We can capture the influences of risk perception computationally by simulating a population of "belief-based agents."
 These agents develop beliefs about the risk of drought in their environment through personal experience. 
 Each agent's perceived drought risks will change their subjective expected crop yields from planting different ratios of wheat to barley.
 
-We can efficiently simulate these population-level risk perceptions in a population of agents with Bayesian brains (Kahvalti et al 2019 ???double check). Bayesian learning allows for a minimal representation of the environment, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
-
 Our brains do not record every bit of perceived information in memory, rather it stores a "compact encoding" of that information which it uses for future decisions. Even if individuals aren't -- consciously or unconsciously --- making these calculations -- the basic algorithmic problem faced by the brain, and solutions it has evolved, reflect the same basic sets of constraints (Sanborn and Chater 2016).
 
-We can treat this problem elegantly using Bayesian statistics using online Bayesian learning from bernoulli observations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. bernoulli distribution) with parameter theta reprenting the risk of drought. Uncertainty in the value of theta can be represented with a beta distribution, constrained between 0 and 1. We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief \@ref(beta-prior). What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely. As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of experience. 
+We can efficiently simulate these population-level risk perceptions in a population of agents with Bayesian brains (Kahvalti et al 2019 ???double check). Bayesian learning allows for a minimal representation of the environment, so that each agent's beliefs can be encoded in two parameters -- defining the Beta distribution over their prior beliefs -- rather than the record of all observed years. Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
 
-```{r beta-prior, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
+```{r prior, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
 prior <- function(m, n) {
   domain <- seq(0,1,0.005)
   val <- dbeta(domain, n * m, n * (1 - m))
@@ -172,11 +170,11 @@ tibble(Age = seq(5, 50, 5),
   theme_classic()
 ```
 
+We can treat this problem elegantly using Bayesian statistics using online Bayesian learning from Bernoulli observations (Bissiri 2010). Put simply, the probability of a drought occuring in any given year is treated as a coin flip (i.e. Bernoulli distribution) with parameter $\theta$ representing the risk of drought. Uncertainty in the value of $\theta$ can be represented with a Beta distribution falling between 0 and 1. We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of the prior belief (Figure \@ref(fig:prior)). What we see here is how an indiviudal's perception of the risk of drought may start off diffuse at first (here as an uniformative flat prior in which all values of theta are equally likely). As each year of experience is observed, the agent updates its beliefs accordingly, balancing the information in this year's observation with the cumulative weight of past experience. 
 
+# Holocene drought risk in the eastern Mediterranean {#sec:2}
 
-# Drought risks in the eastern Mediterranean {#sec:2}
-
-Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from outputs of the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research. TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of external climate drivers (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
+Estimates of drought risk in the eastern Mediterranean during the the past 10,000 years were derived from the TraCE-21k paleoclimate simulation available on the National Center for Atmospheric Research. TraCE-21K is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model (GCM) to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gasses over the past 22,000 years from the Last Glacial Maximum to the present [@He2011]. It generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of external climate drivers (e.g. orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
 
 TraCE-21k simulation outputs for the past 10,000 years were extracted from the grid cell covering the northern Levant and southeastern Turkey. This location was selected due to its proximity to archaeological sites with comparative evidence of crop diversification strategies. This region includes some of the earliest evidence of crop domestication, including sites like Jericho and Can Hasan. 
 
@@ -219,7 +217,7 @@ sim_past <- left_join(precc, precl, by = 'time') %>%
 ```
 
 
-```{r, fig.height = 2, fig.width = 6, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period. The dashed line indicates the level of risk beyond which one would plant barley over wheat to maximize subjective expected yields, given the payoffs defined in Table 1.'}
+```{r risk, fig.height = 2, fig.width = 6, fig.cap = 'Annual risk of wheat crop failure due to drought, averaged by fifty-year period. The dashed line indicates the level of risk beyond which one would plant barley over wheat to maximize subjective expected yields, given the payoffs defined in Table 1.'}
 sim_past %>%
   filter(between(water_year, -9500, -5500)) %>%
   mutate(time_step = ceiling(water_year / 50),
@@ -237,16 +235,14 @@ sim_past %>%
 ```
 
 
-The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
+The bias-corrected wet season precipitation outputs from TraCE-21k show a relatively stationary distribution over the past 10,000 years, with slightly drier conditions during the early-mid Holocene transition at c.a. 8ka BP (Figure \@ref(fig:risk)). The utility of a diversified wheat-barley crop is immediately apparent; rainfall often fails to meet the 300mm threshold for a productive wheat crop during the entire 10,000 year span, but drops below the threshold for barley only a handful of years.
 
-The risk of crop failure due to drought in any given year varies between 10\% and 20\%, punctuated by one to four century-long events where risk drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high drought risk cluster around known periods of regional and global climate deterioration, such as at 8.6ka BP and 4.2ka BP.
-
-
+The risk of crop failure due to drought in any given year varies between 10\% and 20\%, punctuated by one to four century-long events where risk drops as low as 6\% and or exceeds 25\% (Figure \@ref(fig:risk)). Centuries of high drought risk cluster around known periods of regional and global climate deterioration, such as at 8.6ka BP and 4.2ka BP.
 
 A simple "fixed" bayesian learner thus gets more certain with age. For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of ficitious play above, this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change your mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better. So from a Bayesian learning standpoint, how should agents choose to believe new information.
 
 
-# Bayesian learning and the dynamics of risk perception in the Neolithic {#sec:4}
+# The dynamics of risk perception {#sec:4}
 
 
 ```{r, fig.width = 6, fig.height = 3, fig.cap = "Change in perceived drought risks in an older (50) and younger (15) agent before and after a 25-year dry period."}
@@ -272,6 +268,9 @@ scale_color_manual(values = c('#5e3c99', '#e66101'), name = '') +
         strip.placement = "outside") +
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Density')
 ```
+
+
+What's important to remember here is that both agents are acting rationally based on their prior subjective beliefs, they only differ in those beliefs. So the conservatism of the older agent and the flexibility of the yonger agent are not wrong per se, they simply reflect differet rational approaches to the world.
 
 So what are the consequences of these cognitive processes for early farmers in the Mediterranean?
 
