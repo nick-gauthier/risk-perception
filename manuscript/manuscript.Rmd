@@ -11,8 +11,8 @@ authors:
   
 
 keywords:
-- drought risk
 - belief-based agents
+- drought risk
 - crop diversification
 - rapid climate change
 
@@ -20,7 +20,7 @@ abstract: |
   Small-scale agriculturalists in the Mediterranean Basin rely on multiple strategies including diversification, intensification, and storage to maintain a stable food supply in the face of environmental uncertainty. Each of these strategies requires farmers to make specific resource allocation decisions in response to environmental risks and is thus sensitive to variability in both the spatiotemporal pattern of risk and the ability of farmers to perceive that pattern. In this chapter, I present an agent-based model of a Mediterranean agroecosystem. By driving the model with realistic environmental dynamics derived from simulations of mid-Holocene Mediterranean climate, and by allowing the psychology of risk perception to vary among individual farmers, I explore the hidden vulnerabilities of traditional risk-management strategies to periods of rapid climate change. I show that even when farmers are able to manage risk “optimally” in light of past experience, unanticipated changes in the spatiotemporal pattern of rainfall can still lead to major food shortfalls.
 
 bibliography: bibliography.bib
-bibstyle: spbasic
+bibstyle: Formato_bibliografia_Springer
 # bibstyle options spbasic(default), spphys, spmpsci
 output:
   bookdown::pdf_book:
@@ -47,7 +47,7 @@ Over the past 10,000 years, subsistence farmers in the Mediterranean basin have 
 Crop diversification is an excellent example of a widespread and effective regulatory feedback strategy (Figure 1). Relying on a mix of food types with different climatic tolerances is an efficient way to maintain a robust food supply [@helmers2001separating,Anderies2006]. In the Mediterranean, land-use strategies involving a diversified portfolio of wheat and barley have been employed by even the earliest sedentary farmers, and continue to be used to this day [@GOULD1963a,Slafer1999,Abbo2009a,Marston2011190]. Wheat generally has higher yields but is sensitive to water deficits, while barley has lower yields and is drought tolerant. Planting a mix of wheat and barley, either in the same plot or in a combination of plots, is an effective means of diversifying grain supplies. By adjusting the ratio of wheat to barley, farmers can adapt to changing drought risks.
 
 The secret to the success of earliest farmers on the mediterrenan littoral was in their manipulation of the local ecosystem to manage environmental risks. Early farmers constructed a complex agroecosystem to manage risk.
-They needed to maintain stable crop yields in face of uncertain drought risks. Yield stability is very important for traditional agriculturlal commmunities not connected to larger bulk food networks (Abbo et al 2010)
+They needed to maintain stable crop yields in face of uncertain drought risks. Yield stability is very important for traditional agriculturlal communities not connected to larger bulk food networks (Abbo et al 2010)
 neolithic crop package -- weiss zohary 2011
 cite abbo et al 2010? for more stuff about ladraces
 Wheat/barley systems
@@ -57,8 +57,8 @@ so understanding how people of the past adapted to change is important to us tod
 
 Are these crop-diversification strategies vulnerable to the same dynamics as other social-ecological systems with similar regulatory feedbacks mechanisms? One way to address this is to model the influence of imperfect monitoring and biased decision making in uncertain environments. In this study, I accomplish this by answering two main questions:
 
-1. How likely are droughts to occur each year in the eastern Mediterreanean, and how did these risks change over the Holocene?
-2. How might Neolithic farmers have percieved these changing drought risks, and what were the consequences for farming communities with respect to their collective ability to manage risk?
+1. How likely are droughts to occur each year in the eastern Mediterranean, and how did these risks change over the Holocene?
+2. How might Neolithic farmers have perceived these changing drought risks, and what were the consequences for farming communities with respect to their collective ability to manage risk?
 
 
 I couple a climate model with high temporal resolution to a simple game theoretic model of agricultural decision making under uncertainty, in order to examine the performance of optimal and suboptimal wheat-barley diversification practices. I model the year-to-year crop diversification strategies made by farmers as an iterated game of fictitious play against nature [@GOULD1963a]. Farmers are boundedly rational, in that they seek to maximize their objective functions given the perceived probabilities of different actions by nature, but work with flawed mental models of climate-related risks due to imperfect recall of past events. Furthermore, by using a climate model to represent the actions of nature, I can more precisely capture the characteristic autocorrelated patterns of rainfall variability, rather than simply drawing rainfall values from a static distribution. This framework allows me to address the sensitivity of diversification strategies to changes and climatic variability and imperfect human perceptions of those changes.
@@ -140,9 +140,9 @@ If an individual can learn about their environment, such as the risk of drought 
 
 This strategy works well when the environment is stationary -- nature plays from a fixed probability distirubtion, but is vulnerable to environmental nonstationarity. That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because as agents get too stuck in their ways while the world changes around them. Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
 
-# Early to mid-Holocene drought risks in the eastern Mediterranean {#sec:2}
+# Early to mid-Holocene drought risks {#sec:2}
 
-In order to estimate drought risks in the past, we cannot rely on present-day observations alone. Not only does precipitation vary from year-to-year, but it is also subject to centennial and millennial-scale trends and cycles throughout the Holocene that are unresolved in the observational period. Estimating not only the risks of drought in the eastern Mediterranean is therefore not sufficient, and this information must be supplemented with estimates of the *change* in drought risks over time. Climate dynamics are nonlinear, nonstationary, and nonergodic, which means sudden, unpredictable variability is the norm in the region rather than the exception. Using the simulated paleoclimate, rather than modern-day weather station observations or paleoclimate proxies, allows us to estimate not just the first order statistics of the climate system (e.g. the mean and variance of dry years) but also the higher order patterns such as the serial perisistence of wet and dry years. This presents a much more realistic picture of the inherent year-to-year uncertainty in the climate system, and presents a realistic challenge to simple risk-managing strategies that assume climatic risks are fixed.
+In order to estimate drought risks in the past, we cannot rely on present-day observations alone. Not only does precipitation vary from year-to-year, but it is also subject to centennial and millennial-scale trends and cycles throughout the Holocene that are unresolved in the observational period. Estimating not only the risks of drought in the eastern Mediterranean is therefore not sufficient, and this information must be supplemented with estimates of the *change* in drought risks over time. Climate dynamics are non-linear, non-stationary, and non-ergodic, which means sudden, unpredictable variability is the norm in the region rather than the exception. Using the simulated paleoclimate, rather than modern-day weather station observations or paleoclimate proxies, allows us to estimate not just the first order statistics of the climate system (e.g. the mean and variance of dry years) but also the higher order patterns such as the serial persistence of wet and dry years. This presents a much more realistic picture of the inherent year-to-year uncertainty in the climate system, and presents a realistic challenge to simple risk-managing strategies that assume climatic risks are fixed.
 
 ## Paleoclimate simulation
 
@@ -178,10 +178,10 @@ precl <- map(
 
 ## Estimating drought risks
 
-Using the climate model output, I divided each model year into dry years and normal years. A dry year was any year where less than 300mm of rain fell during the wet season (October-May), the threshold below which wheat crops will generally fail [@Wilkinson1997], and a normal year was defined as any year above this threshold. Given the modeled patterns of normal and dry years, the "objective" climatic drought risk $\theta_{empirical}$for any particular year was defined as the proportion of the previous 50 years that were dry year as
+Using the climate model output, I divided each model year into dry years and normal years. A dry year was any year where less than 300mm of rain fell during the wet season (October-May), the threshold below which wheat crops will generally fail [@Wilkinson1997], and a normal year was defined as any year above this threshold. Given the modeled patterns of normal and dry years, the "objective" climatic drought risk $\hat\theta$for any particular year was defined as the proportion of the previous 50 years that were dry year as
 
 \begin{equation}
-    \theta_{empirical} = \frac{\sum_{n=t-1}^{t-50} P_n < 300}{50},
+    \hat\theta = \frac{\sum_{n=t-1}^{t-50} P_n < 300}{50},
 \end{equation} 
 
 where $P_n$ is the growing season precipitation accumulation in millimeters for year $n$.
@@ -208,8 +208,6 @@ sim_past <- left_join(precc, precl, by = 'time') %>%
   group_by(year) %>%
   summarise(risk = sum(drought) / 50) %>%
   filter(year != min(year)) 
-
-sim_past %>% summary
 ```
 
 The simulated risks of crop failure due to drought ranged between 10\% and 46\% during the period from 9.5ka to 5.5ka, with a median risk of 24\% (Figure \@ref(fig:risk)). This means that, on average, a Neolithic farmer in Central Anatolia could expect their wheat crops to fail two or three times a decade, punctuated by even drier periods in which wheat crops could be expected to fail roughly every other year. The simulation also reveals a long-term trend of decreasing drought risks, in particular with higher drought risk in the early Holocene giving way to lower drought risk in the midle Holocene.
