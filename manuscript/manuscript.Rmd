@@ -234,7 +234,7 @@ But how best to model risk perception at the individual level? The human brain d
 
 ## Prior beliefs and Bayesian Agents
 
-It is possible to capture the influence of risk perception on decision making computationally by simulating a population of "belief-based" Bayesian agents. A Bayesian agent is one whose subjective beliefs can be represented as a probability distribution over possible states of nature. 
+It is possible to capture the influence of risk perception on decision making computationally by simulating a population of "belief-based" Bayesian agents. A Bayesian agent is one whose subjective beliefs can be represented as a probability distribution over possible states of nature (Kahvalti et al 2019 and others????). 
 
 Here, the probability of a drought occurring in any given year can be treated as a coin flip (i.e. a draw from Bernoulli distribution) with parameter $\theta$ representing the drought probability. The beta distribution is a natural choice for representing knowledge about probabilities because it is constrained to fall between 0 and 1. Hence, an individual agent's prior belief about the value of $\theta$ can be represented as
 \begin{equation}
@@ -242,7 +242,7 @@ Here, the probability of a drought occurring in any given year can be treated as
 \end{equation}
 a beta distribution with the parameters $\alpha$ and $\beta$ corresponding to the number of dry and wet years previously experienced by that agent. Varying these two parameters thus allows us to represent a variety of different personal experiences of drought risk. For example, if an agent recalls having lived through 5 dry years and 25 normal years, their prior belief about the chance of a drought occurring in the following year would be represented as a Beta(5, 25) distribution with mean value 0.2 equivalent to the empirical drought risk for that period, $\hat\theta$.
 
-Using probabilities to represent agents' beliefs also allows for estimation of the *uncertainty* in those beliefs (Figure \@ref(fig:prior-prob)). For example, an agent who experienced 5 wet and 10 normal years and one who experienced 25 wet and 50 normal years would both agree that, on average, droughts occur 50\% of the time. Yet the latter agent would be much more certain in this belief because it is drawn from a larger range of experience (i.e. a larger sample size). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of this prior belief. An agents perception of drought risk by start off diffuse at first -- represented as an uninformative flat prior in which all values of $\theta$ are equally plausible. As each year's weather is observed, the agent updates its beliefs accordingly by balancing the information in this year's observation with the cumulative weight of their past experience. 
+Using probabilities to represent agents' beliefs also allows for estimation of the *uncertainty* in those beliefs (Figure \@ref(fig:prior-prob)). A simple Bayesian agent becomes more certain in their beliefs with age. For example, an agent who experienced 5 wet and 10 normal years and one who experienced 25 wet and 50 normal years would both agree that, on average, droughts occur 50\% of the time. Yet the latter agent would be much more certain in this belief because it is drawn from a larger range of experience (i.e. a larger sample size). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of this prior belief. How, then, should an agent update its beliefs in light of new experience? 
 
 ```{r prior-prob, fig.width = 5, fig.height = 3, fig.cap = "Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as Beta probabiity distributions, and the increased certainty with age reflects the varying effective sample size of the Beta prior."}
 prior <- function(m, n) {
@@ -265,24 +265,11 @@ tibble(Age = seq(5, 50, 5),
 
 ## Individual learning and Bayesian updating
 
-A simple "fixed" Bayesian learner thus becomes more certain in their beliefs with age. 
+As a Bayesian agent moves through time and observes each successive year's weather, it must be able to update its beliefs accordingly. It does does by comparing the information in this year's observation with the cumulative weight of their past experience. The agent combines its prior beliefs about drought risk with the likelihood of observing a drought this year in order to generate a posterior distribution representing its updated beliefs about the world. 
 
+Crucially, the strength of one's prior beliefs determines how much weight is given to new information. For example, assume two agents -- one aged 15 and the other aged 50 -- who have only ever experienced a moist climate where droughts happen on average two out of every ten years. The mean value of $\theta$ for both agents would thus be 20\%, but the degree of certainty varies because the older agent is basing this inference on many more years of experience. Now assume the climate suddenly changes such that the drought risk is doubled to 40\% for the next 25 years (Figure \@ref(fig:posterior)). Because the prior beliefs of the agents were so different, their subjective beliefs after the drought are also different *even though each agent experienced the exact same objective drought risk*.
 
-For young agents with weak priors, the information of each new year can strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of fictitious play discussed in Section \@ref(sec:1), this strategy is fine when the environment is stable and risks do not change. But when there is volatility in the environment, and risks can change, it becomes important to change one's mind. Being too inflexible in one's priors can lead being too optimistic when things have really changed for the worse, and alternately being too conservative when things finally do get better.
-
-For example, assume two agents -- one aged 15 and the other aged 50 -- who have only ever lived through wet years when droughts happen on average 2 out of every ten years.
-
-
-online learning, so only ever +1 or 0 in each case
-
-
-
-
-Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
-
-Even if individuals aren't -- consciously or unconsciously -- making these calculations, the basic algorithmic problem faced by the brain, and the solutions it has evolved, reflect the same basic constraints (Sanborn and Chater 2016).
- We can treat this problem elegantly using Bayesian statistics (Bissiri 2010). 
-(Kahvalti et al 2019 ???)
+For young agents with weak priors, the information of each new year can thus strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of fictitious play discussed in Section \@ref(sec:1), having conservative beliefs is fine when the environment is stable and risks do not vary. But when there is volatility in the environment, and risks can indeed change, the ability to change one's mind is crucial. Being too inflexible in one's priors can lead being too optimistic when things really have changed for the worse, or alternately being too conservative when conditions ultimately improve.
 
 ```{r posterior, fig.width = 6, fig.height = 3, fig.cap = "Change in perceived drought risks in an older (50) and younger (15) agent before and after a 25-year dry period."}
 prior2 <- function(a, b) {
@@ -310,6 +297,14 @@ scale_color_manual(values = c('#5e3c99', '#e66101'), name = '') +
 
 
 # Risk management and the dynamics of risk perception {#sec:4}
+
+
+
+
+online learning, so only ever +1 or 0 in each case
+
+
+This updated posterior distribution becomes the agent's prior for the following year, and the process repeats itself. Formally, this iterative process is known as "online" learning from Bernoulli observations, where "online" refers to the sequential, year-to-year updating [@Bissiri2010]. 
 
 Its important to note that, although these perceptions can be biased away from the true climatic drought risk, they still reflect perfectly rational beliefs.
 
@@ -422,6 +417,9 @@ Given the average drought risks estimated from TraCE-21k and assuming perfect mo
 
 
 
+Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
+
+Even if individuals aren't -- consciously or unconsciously -- making these calculations, the basic algorithmic problem faced by the brain, and the solutions it has evolved, reflect the same basic constraints (Sanborn and Chater 2016).
 
 Statistically downscaling palaeoclimate simulations and coupling them to game theoretic models of decision making under uncertainty is a simple way to better understand the patterning of climate changes and the regulatory feedbacks farmers use to adapt to them. To further explore these patterns, future work should incorporate additional risk-minimizing strategies such as storage and exchange. Food storage and exchange can also be thought of as forms of diversification, the former in the time and the latter in space [@Marston2011190]. Food exchange would be of particular interest from a game theoretic perspective, as incomplete information with respect to an exchange partner's crop diversification and storage practices can lead to situations of moral hazard.
 
