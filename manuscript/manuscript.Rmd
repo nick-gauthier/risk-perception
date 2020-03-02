@@ -136,9 +136,9 @@ tibble(risk = seq(0, 1, .1),
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Expected yield (t/ha)')
 ```
 
-If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility. If the probability distribution of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distirubtion of nature's moves. In the language of game theory, this strategy is known as a "game of ficticious play" against nature. This is an effective risk-managing strategy, but like all similar strategies that adapt to a specific pattern of variability, it is vulnerable to changes in the pattern of variability (Janssen eta al 2007)
+If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility. If the probability distribution of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distribution of nature's moves. In the language of game theory, this strategy is known as a game of "fictitious play" against nature. This is an effective risk-managing strategy, but like all similar strategies that adapt to a specific pattern of variability, it is vulnerable to changes in the pattern of variability (Janssen eta al 2007)
 
-This strategy works well when the environment is stationary -- nature plays from a fixed probability distirubtion, but is vulnerable to environmental nonstationarity. That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because as agents get too stuck in their ways while the world changes around them. Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
+This strategy works well when the environment is stationary -- nature plays from a fixed probability distribution, but is vulnerable to environmental non-stationarity. That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because as agents get too stuck in their ways while the world changes around them. Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
 
 # Early to mid-Holocene drought risks {#sec:2}
 
@@ -183,7 +183,6 @@ Using the climate model output, I divided each model year into dry years and nor
 \begin{equation}
     \hat\theta = \frac{\sum_{n=t-1}^{t-50} P_n < 300}{50},
 \end{equation} 
-
 where $P_n$ is the growing season precipitation accumulation in millimeters for year $n$.
 
 ```{r}
@@ -258,20 +257,22 @@ tibble(Age = seq(5, 50, 5),
   ggplot(aes(x, y)) +
   geom_line(aes(group = Age, color = Age), size = 1.2, alpha = .8) +
   scale_color_distiller(palette = 'PuOr', guide = 'legend') +
-  labs(x = expression('Drought probability (' * theta * ')'), y = 'Density') +
+  labs(x = expression('Perceived drought risk (' * theta * ')'), y = 'Density') +
   theme_classic()
 ```
 
 
-## Individual learning and Bayesian updating
+## Bayesian updating and the weight of past experience
 
 As a Bayesian agent moves through time and observes each successive year's weather, it must be able to update its beliefs accordingly. It does does by comparing the information in this year's observation with the cumulative weight of their past experience. The agent combines its prior beliefs about drought risk with the likelihood of observing a drought this year in order to generate a posterior distribution representing its updated beliefs about the world. 
 
-Crucially, the strength of one's prior beliefs determines how much weight is given to new information. For example, assume two agents -- one aged 15 and the other aged 50 -- who have only ever experienced a moist climate where droughts happen on average two out of every ten years. The mean value of $\theta$ for both agents would thus be 20\%, but the degree of certainty varies because the older agent is basing this inference on many more years of experience. Now assume the climate suddenly changes such that the drought risk is doubled to 40\% for the next 25 years (Figure \@ref(fig:posterior)). Because the prior beliefs of the agents were so different, their subjective beliefs after the drought are also different *even though each agent experienced the exact same objective drought risk*.
+Crucially, the strength of one's prior beliefs determines how much weight is given to new information (Figure \@ref(fig:posterior)). For example, assume two agents -- one aged 15 and the other aged 50 -- who have only ever experienced a moist climate where droughts happen on average two out of every ten years. The mean value of $\theta$ for both agents would thus be 20\%, but the degree of certainty varies because the older agent is basing this inference on many more years of experience. Now assume the climate suddenly changes such that the drought risk is doubled to 40\% for the next 25 years -- not an uncommon occurrence in the simulation of early to mid-Holocene climate. Because the prior beliefs of the agents were so different, their subjective beliefs after the drought are also different *even though both experienced the exact same climate*.
 
-For young agents with weak priors, the information of each new year can thus strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year with the many decades of accumulated experience. As was the case with the simple game of fictitious play discussed in Section \@ref(sec:1), having conservative beliefs is fine when the environment is stable and risks do not vary. But when there is volatility in the environment, and risks can indeed change, the ability to change one's mind is crucial. Being too inflexible in one's priors can lead being too optimistic when things really have changed for the worse, or alternately being too conservative when conditions ultimately improve.
+For young agents with weak priors, the information of each new year can thus strongly influence their beliefs. For older agents who have experienced many more years their priors will be stronger, and they will be less likely to update their beliefs when balancing the information from a single year's weather with previous decades' worth of accumulated experience. Although neither agent may perceive the "true" climatic drought risk exactly, they nevertheless reflect perfectly rational beliefs about the world. Both agents have perfectly rational beliefs and differ only in their prior subjective beliefs - their relative conservatism or flexibility are not biases but rather varying perspectives on an inherently uncertain world.
 
-```{r posterior, fig.width = 6, fig.height = 3, fig.cap = "Change in perceived drought risks in an older (50) and younger (15) agent before and after a 25-year dry period."}
+As was the case in the game of "fictitious play" discussed in Section \@ref(sec:1), having conservative beliefs is fine when the environment is stable and risks do not vary. But when there is volatility in the environment, and risks can indeed change, the ability to change one's mind is crucial. Being too inflexible in one's priors can lead being too optimistic when things really have changed for the worse, or alternately being too conservative when conditions ultimately improve.
+
+```{r posterior, fig.width = 6, fig.height = 3, fig.cap = "Change in perceived drought probability in an older (50) and younger (15) agent before and after a 25-year dry period."}
 prior2 <- function(a, b) {
   domain <- seq(0,1,0.005)
   val <- dbeta(domain, a, b)
@@ -292,56 +293,26 @@ scale_color_manual(values = c('#5e3c99', '#e66101'), name = '') +
   theme(strip.background = element_blank(),
         legend.position = c(.43, .5),
         strip.placement = "outside") +
-  labs(x = expression('Drought probability (' * theta * ')'), y = 'Density')
+  labs(x = expression('Perceived drought risk (' * theta * ')'), y = 'Density')
 ```
-
 
 # Risk management and the dynamics of risk perception {#sec:4}
 
+While the above example helps establish some basic intuition for how agents with varying subjective beliefs can perceive risk differently, it represents an idealized situation where agents update their beliefs retrospectively after a many-year dry period. Farmers, on the other hand, must update their planting decisions each year and continuously monitor the weather around them. The transient, year-to-year changes in perceived risks can thus have major consequences for how a population responds *during* a dry period. How do Bayesian learners perform in such an uncertain, unpredictable time? 
 
 
-
-online learning, so only ever +1 or 0 in each case
-
-
-This updated posterior distribution becomes the agent's prior for the following year, and the process repeats itself. Formally, this iterative process is known as "online" learning from Bernoulli observations, where "online" refers to the sequential, year-to-year updating [@Bissiri2010]. 
-
-Its important to note that, although these perceptions can be biased away from the true climatic drought risk, they still reflect perfectly rational beliefs.
-
-What's important to remember here is that both agents are acting rationally based on their prior subjective beliefs, they only differ in those beliefs. So the conservatism of the older agent and the flexibility of the younger agent are not wrong per se, they simply reflect different rational approaches to the world.
-
-So what are the consequences of these cognitive processes for early farmers in the Mediterranean?
-
-Simulate a time series with varying drought frequency, based off the empirical drought risks derived from the paleoclimate simulation.
-
-This suggests that people are more in danger of not realizing conditions are improving when they actually have -- the opportunity cost -- rather than failing to realize the change in the first place.
-The law of small numbers is very important here. The range of each person's experience is so small -- every individual's perceived risk will be a small and noisy sample of the true value.
-Older people are much more certain, even though they are wrong.
-
-
-That is, what if the risk of a drought, theta, is not a constant but rather varies unpredictably in time?
-The statistical problem shifts then to one of change detection (o'reilly 2013, gallistel et al 2014).
-In other words do people simply adapt to changes -- as in the fixed bayesian learner and moving average approaches -- or do they detect them?
-Strict year-to-year updating can result in overly conservative risk perceptions, suggesting people are slow to change their beliefs when in reality they often quickly update them (Bissiri 2010).
-Indeed, the "forgetful bayesian brain" model seems to perform better, with a dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
-
-That is, the above figure assumes a noise free environment with a single learner. Next we can look at a population of learners in a noisy environment
-
-
-Examining the long-term dynamics of crop yields among all decision-making strategies and psychological profiles reveals variability in yields due to different decision making preferences is far greater than variability due to differences in risk perception (Figure 7). Risk-minimizing strategies sacrifice productivity for predictability, consistently lowering the mean and variance of crop yields over time. Risk-minimizing strategies are more sensitive to risk perception than yield-maximizing strategies; varying the memory decay rate parameter $\lambda$ had no effect on the optimal crop allocation for yield maximizers. 
-^^ change above to talk about individual uncertainty in drought risk is often greater than the actual variability in drought risk, given the limited life experience an individual draws from
-
-During periods of climatic stability, allowing past experiences to influence decision making helps farmers minimize the impacts of \emph{predictable} drought. But past experiences are less informative during periods of rapid climate change, and even farmers who manage risk “optimally” experience major food shortfalls. Climatically-induced variability in food supplies consistently surpasses that from differences in risk-perception psychology, but not that from different risk aversion preferences. This finding suggests that the efficacy of risk managing strategies that rely on regulatory feedbacks is limited to periods of relative climatic stability. This is consistent with the observation from the Roman Period Mediterranean that while minor food crises were common in the ancient world, extreme famines were rare [@Garnsey1989].
-
+To explore these dynamics we can simulate a population of Bayesian agents responding to a random sequence of wet and dry years. Here, observations are made about the world sequentially, and the agent must continuously update its beliefs accordingly. As in the previous section, an agent's prior belief about drought risk is updated in light of new experience to generate a posterior perception risk. Now, this update occurs every year and thus only a year's worth of new information is incorporated into the agent's beliefs each time step. The learning process is iterative, as an agent's posterior distribution in one year becomes their prior following year and the updating process repeats itself. Formally, this iterative process is known as "online" learning from Bernoulli observations, where "online" refers to the sequential, year-to-year updating [@Bissiri2010]. In this learning environment, isolating signal from noise becomes critical for accurately perceiving evolving drought risks.
 
 ```{r}
 agents <- tibble(id = 1:150, 
                  alpha = 1.5,
                  beta = 1.5,
                  risk = alpha / (alpha + beta),
-                 #age = sample.int(80, size = 150, replace = TRUE),
                  crop = 'barley')
+```
 
+
+```{r}
 learn <- function(agents, drought) {
   if (drought == 'TRUE') wheat_yield <- wheat_dry; barley_yield <- barley_dry
   if (drought == 'FALSE') wheat_yield <- wheat_normal; barley_yield <- barley_normal
@@ -351,7 +322,6 @@ learn <- function(agents, drought) {
       mutate(yield_exp = expected_yield(risk),
          barley_exp = expected_yield_barley(risk),
          wheat_exp = expected_yield_wheat(risk),
-         expected_yield = barley_exp + wheat_exp,
          crop = case_when(barley_exp > wheat_exp ~ 'barley',
                               barley_exp < wheat_exp ~ 'wheat',
                               barley_exp == wheat_exp ~ 'either'),
@@ -359,13 +329,14 @@ learn <- function(agents, drought) {
          wheat_prop = map_dbl(prediction, ~sum(. < indiff$risk)) / 100) %>%
       select(-prediction) %>%
   # nature's turn to decide realized yields
-    mutate(payoff = wheat_yield * wheat_prop + barley_yield * (1 - wheat_prop),
-           alpha = drought + alpha,
+    mutate(alpha = drought + alpha,
            beta = beta + 1 - drought,
-          # mu = alpha / (alpha + beta),
            risk = map2_dbl(alpha, beta, ~rbeta(1, .x, .y)))
 }
+```
 
+
+```{r}
 make_droughts <- function() c(runif(25) < 0.2, runif(25) < 0.4, runif(25) < 0.2)
 
 set.seed(11111)
@@ -388,33 +359,35 @@ a <- ggplot(sim1) +
   geom_point(aes(time, risk), alpha = .1) +
   geom_hline(yintercept = indiff$risk, color = 'red', linetype = 2) +
   theme_classic() +
-  labs(x = 'years', y = 'Perceived drought risk')
+  labs(x = 'Year', y = 'Perceived drought risk')
 
 b <- sim1 %>%
   group_by(time, crop) %>%
   tally() %>%
 ggplot(aes(time, n, fill = crop, color = crop)) +
   geom_bar(width = 1, stat = 'identity', position = 'fill') +
-  #scale_fill_manual(values = c('darkgoldenrod', 'lightgoldenrod')) +
-  #  scale_fill_manual(values = c('#e66101', '#5e3c99'), name = '') +
     scale_fill_manual(values = c('#f1a340', '#998ec3'), name = '') + 
     scale_color_manual(values = c('#f1a340', '#998ec3'), name = '') + 
-    labs(x = 'Years', y = 'Wheat proportion') +
+    labs(x = 'Year', y = 'Wheat proportion') +
   theme_classic()
 
 a / b
 ```
 
 
-These two plots begin to look more alike the more you sample, which makes sense because its an ergodic system.
-
-Note in these plots above and below we're summing all the wheat and barley in the population, compared to below which shows the wheat proportions of individuals.
-
-
 # Conclusion
+
+
+During periods of climatic stability, allowing past experiences to influence decision making helps farmers minimize the impacts of \emph{predictable} drought. But past experiences are less informative during periods of rapid climate change, and even farmers who manage risk “optimally” experience major food shortfalls. 
 
 Given the average drought risks estimated from TraCE-21k and assuming perfect monitoring and recall of recent droughts (i.e. $\lambda = 0$), farmers intent on minimizing the risk of crop failure would be expected to plant about 65\% barley to 35\% wheat on average. This proportion is within the range estimated from macrobotanical remains at a nearby archaeological site [@Marston2011190]. Yield maximizing farmers instead play a pure strategy profile, planting wheat if the perceived drought risk is less than 0.68 and barley if it is more. Because the GCM-simulated drought risk never rises above this threshold, a yield-maximizing farmer will always plant a wheat monocrop.
 
+1. drought risks varied between 10\% and 45\% throughout the Holocene
+2. risk perceptions are influenced  by individual life experience, which is necessarily limited and noisy
+3. people behave rationally given experience?
+
+1. How likely are droughts to occur each year in the eastern Mediterranean, and how did these risks change over the Holocene?
+2. How might Neolithic farmers have perceived these changing drought risks, and what were the consequences for farming communities with respect to their collective ability to manage risk?
 
 
 Not only does this approach have a clear computational efficiency, but for the same reason this reflects the processes actually going on in the heads of decision makers.
@@ -425,6 +398,10 @@ Statistically downscaling palaeoclimate simulations and coupling them to game th
 
 
 Think about the importance of the population's age structure, becuase that's going to impact the collective memory of drought.
+
+
+Examining the long-term dynamics of crop yields among all decision-making strategies and risk perceptions reveals variability in yields due to differences in risk perception outweigh variability due to changing objective drought risk alone. This occurs because of the limited life experience each individual is able to draw from. 
+
 
 \setlength{\parindent}{-0.5in}
 \setlength{\leftskip}{0.5in}
