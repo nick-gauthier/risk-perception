@@ -1,7 +1,7 @@
 ---
 title: The dynamics of risk perception in a Mediterranean agroecosystem
 subtitle: 
-titlerunning: The dynamics of risk perception in a Mediterranean agroecosystem
+titlerunning: The dynamics of risk and risk perception in a Mediterranean agroecosystem
 authorrunning: Gauthier
 
 authors: 
@@ -57,21 +57,20 @@ To address these questions, I first use results from a long-term paleoclimate si
 
 # Decision-making in a game against nature {#sec:1}
 
-The basic decision-making problem facing a farmer seeking to diversify their crops can be thought of as a "game against nature" [@LuceRaiffa1989, Milnor1952, Agrawal1968, cassidy1971, gould1963]. The "game" in this context represents the farmer's decision of which crops to plant and in what proportions, given uncertainty in whether "nature" will be dry or wet in a given year (Table 1). Although  reality continuous, but people often intuitively solve an easier problem when faced with a complex real-world situation [@Simon1952]. The exact values in the payoff matrix here are less important than the relative payoffs in each quadrant. We can think of this game as being the culturally-inherited object. So in this case the cultural norm would be to mix wheat and barley, but individuals need to choose the precise ratio given their perception of risk. Our question is how do individuals make decisions here?
+The basic decision-making problem facing a farmer seeking to diversify their crops can be thought of as a "game against nature" [@LuceRaiffa1989, Milnor1952, Agrawal1968, cassidy1971, gould1963]. In the context of decision theory, the "game" is the farmer's decision of which crops to plant and in what proportions, given uncertainty in the weather (or the "state of nature") in a given year. Assume that a farmers are working with a simplified representation of reality and intuitively solve an easier problem when faced with a complex real-world situation [@Simon1952]. That is, rather than a continuum of possible states of nature, only care about two categories -- years when its too dry to plant wheat and years when it is not.
+
+This simplified decision problem can take the form of a payoff matrix in which the rows represent the moves of the farmer (wheat or barley) and the columns are the moves of nature (dry or normal) (Table 1). The matrix is populated with realistic estimates of potential crop yields in each scenario -- using data from isotopic analysis of grain residues at Neolithic sites [@Slafer1999] -- but the absolute yields are less important for the decision-making problem then the relative sums of each row and column. What strategies might a farmer use to "win" this game and maximize their yields?
 
 \begin{table}
 \centering
-\caption{Estimates of yield volume (t/ha) for ancient wheat and barley varieties derived from [@Slafer1999].}
+\caption{Estimates of yield volume (t/ha) for prehistoric wheat and barley varieties derived from (Slafer et al. 1999). The absolute values here are less important for decision-making than the relative values across each row and column.}
 \begin{tabular}{|l|l|l|}
 \hline
-
  & Dry Year & Normal Year \\ \hline
 Barley Yield & 0.93 & 1.18 \\ \hline
 Wheat Yield & 0 & 1.60 \\ \hline
-
 \end{tabular}
 \end{table}
-
 
 ```{r}
 wheat_dry <- 0
@@ -81,20 +80,14 @@ barley_dry <- 0.93
 barley_normal <- 1.18
 ```
 
-How should an early farmer make a decision in light of this uncertainty?
-The basic logic of crop diversitication is Portfolio of crops ala modern portfolio theory: Blank2001
-Sometimes best to think of nature as a sentient opponent out to get you, and play strategically based on that assumption. Gould 1963,  Beckenkamp 2008
-quick overview of criteria without risk, then say that a better option is to estimate the probabilities of the different state of nature
-Agrawal1968 talks about the strategies in the context of agriculture being a game against nature
-here I can slip in the cool thing about acting like the weather is out to get you being a good idea in states of complete uncertainty
-transition -- the problem becomes easier if you have at least some idea of nature's moves, because then you cna work to get the highest yeilds given the risk of drought.
-Decision strategies as choosing different points -- plot of decisions
 
-\begin{align}
-a^2+b^2=c^2
-\end{align}
+There are several decision criteria a farmer might use in this situation [@Agrawal1968]. A risk neutral farmer seek only to maximize yields in a normal year by planting wheat and hoping for the best, as wheat is the highest yielding crop overall. But this strategy risks starvation in drought years. 
 
-```{r, fig.cap = 'Expected wheat and barley yields under increasing drought risk with the point of indifference highlighted.'}
+Instead it is often rational to assume "nature's" moves are decided by sentient being bent on one's ruin, and to play strategically based on that assumption [@Gould 1963, Beckenkamp 2008]. In the particular form of the wheat-barley game presented in Table 1, a risk sensitive farmer would assume that droughts are inevitable and plant barley to guarantee a minimum acceptable harvest even in the worst case scenario. This cautious strategy has some benefits -- particularly in situations of complete uncertainty -- but farmers miss out on high yields they would have received from planting wheat if a drought ultimately does not occur.
+
+Playing this "game" over many years allows farmers to learn how probable each state of nature is to occur and to adjust their choices accordingly. This strategy is known as playing a game of "fictitious play" against nature. If the empirical frequency distribution of wet and dry years is known, the farmer can multiply the crop yields in Table 1 by the probability of each state of nature occurring, and plant the crop with the highest *expected* yield. If the probability of a dry year is denoted $\theta$, then the expected barley yield is $\theta \times 0.93 + (1 - \theta) \times 1.18$ and the expected wheat yield is $\theta \times 0 + (1 - \theta) \times 1.60$. Barley is favored if $\theta$ is low and droughts are more likely and wheat is favored if $\theta$ high, and value of $\theta$ where expected barley yields equal expected wheat yields is known as the point of indifference (Figure \@ref{fig:yields}). If a farmer is unsure whether $\theta$ is above or below the point of indifference, they can plant a mix of crops that maximizes expected yields given their uncertainty in $\theta$.
+
+```{r yields, fig.cap = 'Expected wheat and barley yields under increasing drought risk. The point of indifference is highlighted, at which point planting either wheat or barley results in the same expected yield.'}
 expected_yield_wheat <- function(risk) {
   risk * wheat_dry + (1 - risk) * wheat_normal
 }
@@ -126,9 +119,6 @@ tibble(risk = seq(0, 1, .1),
   labs(x = expression('Drought probability (' * theta * ')'), y = 'Expected yield (t/ha)')
 ```
 
-If an individual can learn about their environment, such as the risk of drought in any given year, then they can behave more rationally by trying to maximize their subjective expected utility. If the probability distribution of nature's moves is known, the farmer can choose the crop mix that simply maximizes the expected crop yields given the empirical frequency distribution of nature's moves. In the language of game theory, this strategy is known as a game of "fictitious play" against nature. While this is can be an effective risk-management strategy, like all strategies adapted to a specific pattern of variability it is vulnerable to changes in the pattern of variability [@Janssen2007].
-
-This strategy works well when the environment is stationary -- nature plays from a fixed probability distribution, but is vulnerable to environmental non-stationarity. That is, when the mean or higher order moments of the rainfall distribution shift, playing a game of fictitious play can backfire because as agents get too stuck in their ways while the world changes around them. Thus it is important to understand the dynamics of risk perception -- how subjective risks, and thus subjective expected utility -- rise and fall in uncertain environments.
 
 # Early to mid-Holocene drought risks {#sec:2}
 
@@ -138,9 +128,10 @@ Using the simulated paleoclimate, rather than modern-day weather station observa
 
 ## Paleoclimate simulation
 
-Estimates of changing Holocene precipitaiton variability were derived from the TraCE-21ka paleoclimate simulation [@He2011]. TraCE-21ka is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gas concentrations from the Last Glacial Maximum to the present. The simulation generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of external climate drivers (e.g. Earth's orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
+Estimates of changing Holocene precipitation variability were derived from the TraCE-21ka paleoclimate simulation [@He2011]. TraCE-21ka is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gas concentrations from the Last Glacial Maximum to the present. The simulation generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of external climate drivers (e.g. Earth's orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six hourly timescale, and model outputs are archived at a monthly resolution.
 
-Monthly TraCE-21ka precipitation outputs were extracted from the 3.75° grid cell covering Central Anatolia. This location was selected to sample climate patterns typical for key archaeological sites in the region such as Çatalhöyük and Aşıklı Höyük, and for the eastern Mediterranean more broadly. 
+Monthly TraCE-21ka precipitation outputs were extracted from the 3.75° grid cell covering Central Anatolia. This location was selected to capture climate variability typical for major Neolithic settlements in the region, such as Çatalhöyük and Aşıklı Höyük, and for the eastern Mediterranean more broadly. 
+
 ```{r}
 konya <- matrix(c(32.5, 37.9), nrow = 1) # point at which to sample TraCE
 ```
@@ -171,7 +162,6 @@ precl <- map(
 ## Estimating drought risks
 
 Using the climate model output, I divided each model year into dry years and normal years. A dry year was any year where less than 300mm of rain fell during the wet season (October-May), the threshold below which wheat crops will generally fail [@Wilkinson1997], and a normal year was defined as any year above this threshold. Given the modeled patterns of normal and dry years, the "objective" climatic drought risk $\hat\theta$ for any particular year was defined as the proportion of the previous 50 years that were dry years:
-
 \begin{equation}
     \hat\theta = \frac{\sum_{n=t-1}^{t-50} P_n < 300}{50},
 \end{equation} 
@@ -374,8 +364,7 @@ These dynamics have implications for understanding risk management and food prod
 
 2. **Individual risk perception has consequences for collective risk management.** Individuals of different ages may perceive the same dry period differently depending on their prior life experience. Younger individuals are more likely to perceive a run of dry years as a trend, rather than a temporary deviation from the norm, and older individuals  are likely to do the opposite. By extension, the age structure of a population will influence how quickly it is able to perceive and adapt to a changing climate. For example, a young, fast growing population will have a different collective memory of a past drought event then an older population. Likewise, baby booms and busts associated with famines, or any mortality crisis that afflicts specific age classes like warfare or epidemics, will alter the time horizon of that population's collective memory. Individual heterogeneity in risk perceptions can thus play a key role in broader social responses to climatic risks.
 
-Although social learning and cumulative cultural evolution have not been a focus of this paper (see [@Boyd and Richerson 1998, 2001]), these findings provide insight into the individual learning dynamics that underlay those broader social processes. 
-Relating collective knowledge to individual cognition is essential for understanding human behavior in complex social-ecological systems [@Beratan2007]. This chapter has focused primarily on the physical and cognitive dimensions of risk and risk perception. The social context of risk and risk perception can be equally consequential [@Rogers1997]. The balance of individual learning with social transmission determines the collective perception of risks and its impact on collective memory [@Moussaid2013, candia2019]. Our finite lifespans ultimately keep the skill of individual learning low over the long term -- cumulative cultural evolution is required. 
+Relating collective knowledge to individual cognition is essential for understanding human behavior in complex social-ecological systems [@Beratan2007]. Although social learning and cumulative cultural evolution have not been a focus of this paper (see [@Boyd and Richerson 1998, 2001]), these findings provide insight into the individual learning dynamics that underlay those broader social processes. This chapter has focused primarily on the physical and cognitive dimensions of risk and risk perception. The social context of risk and risk perception can be equally consequential [@Rogers1997]. The balance of individual learning with social transmission determines the collective perception of risks and its impact on collective memory [@Moussaid2013, candia2019]. Our finite lifespans ultimately keep the skill of individual learning low over the long term -- cumulative cultural evolution is required. 
 
 \setlength{\parindent}{-0.5in}
 \setlength{\leftskip}{0.5in}
