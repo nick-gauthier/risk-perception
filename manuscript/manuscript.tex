@@ -37,22 +37,19 @@
 
 \begin{document}
 
-\title{The dynamics of risk perception in a Mediterranean agroecosystem \thanks{Grants or other notes about the article that should go on the front page
-should be placed here. General acknowledgments should be placed at the
-end of the article.} }
+\title{The dynamics of risk perception in a Mediterranean agroecosystem }
 
 
     \titlerunning{The dynamics of risk perception in a Mediterranean agroecosystem}
 
-\author{  Nicolas Gauthier 1 \and  }
+\author{  Nicolas Gauthier \and  }
 
     \authorrunning{ Gauthier }
 
 \institute{
-        Nicolas Gauthier 1 \at
-     Laboratory of Tree-Ring Research \& School of Geography and Development,
- University of Arizona \\
-     \email{\href{mailto:ngauthier@email.arizona.edu}{\nolinkurl{ngauthier@email.arizona.edu}}}  %  \\
+        Nicolas Gauthier \at
+     Laboratory of Tree-Ring Research \& School of Geography and Development, University of Arizona \\
+     \email{\href{mailto:ngauthier@arizona.edu}{\nolinkurl{ngauthier@arizona.edu}}}  %  \\
 %             \emph{Present address:} of F. Author  %  if needed
     \and
     }
@@ -64,33 +61,16 @@ end of the article.} }
 \maketitle
 
 \begin{abstract}
-Small-scale agriculturalists in the Mediterranean Basin rely on multiple
-strategies including diversification, intensification, and storage to
-maintain a stable food supply in the face of environmental uncertainty.
-Each of these strategies requires farmers to make specific resource
-allocation decisions in response to environmental risks and is thus
-sensitive to variability in both the spatiotemporal pattern of risk and
-the ability of farmers to perceive that pattern. In this chapter, I
-present an agent-based model of a Mediterranean agroecosystem. By
-driving the model with realistic environmental dynamics derived from
-simulations of mid-Holocene Mediterranean climate, and by allowing the
-psychology of risk perception to vary among individual farmers, I
-explore the hidden vulnerabilities of traditional risk-management
-strategies to periods of rapid climate change. I show that even when
-farmers are able to manage risk ``optimally'' in light of past
-experience, unanticipated changes in the spatiotemporal pattern of
-rainfall can still lead to major food shortfalls.
+Small-scale agriculturalists in the Mediterranean Basin rely on multiple strategies including diversification, intensification, and storage to maintain a stable food supply in the face of environmental uncertainty. Each of these strategies requires farmers to make specific resource allocation decisions in response to environmental risks and is thus sensitive to variability in both the spatiotemporal pattern of risk and the ability of farmers to perceive that pattern. In this chapter, I present a simple agent-based model of a Mediterranean agroecosystem. By driving the model with realistic environmental dynamics derived from simulations of mid-Holocene Mediterranean climate, and by allowing the psychology of risk perception to vary among individual farmers, I explore the hidden vulnerabilities of traditional risk-management strategies to periods of rapid climate change. I show that even when farmers are able to manage risk ``optimally'' in light of past experience, unanticipated changes in the spatiotemporal pattern of rainfall can still lead to major food shortfalls.
 \\
 \keywords{
-        key \and
-        dictionary \and
-        word \and
+        Bayesian agents \and
+        game against nature \and
+        crop diversification \and
+        drought risk \and
+        rapid climate change \and
     }
 
-    \subclass{
-                    MSC code 1 \and
-                    MSC code 2 \and
-            }
 
 \end{abstract}
 
@@ -102,445 +82,276 @@ rainfall can still lead to major food shortfalls.
 \hypertarget{intro}{%
 \section{Introduction}\label{intro}}
 
-Over the past 10,000 years, subsistence farmers in the Mediterranean
-basin have developed sophisticated strategies to maintain stable food
-supplies given uncertain rainfall. Their suite of strategies include
-practices like crop diversification, storage, and exchange (Halstead and
-O'Shea 1989)). These risk-management strategies all represent forms of
-\emph{regulatory feedback} used to manage complex socio-ecological
-systems. Regulatory feedbacks convert a system's high-variance inputs
-into low-variance outputs by dynamically monitoring the outputs and
-adjusting internal properties of the system ({\textbf{???}}).
-Risk-managing strategies require farmers to make specific resource
-allocation decisions in response to environmental risks, and as
-regulatory feedbacks they are thus sensitive to variability in both the
-spatiotemporal patterns of risk and the ability of farmers to perceive
-and act on those patterns.
+The distinctive climate and ecology of the Mediterranean basin afforded both challenges and opportunities to the earliest farming communities. Water was the primary limiting resource for these traditional agroecosystems. Agricultural droughts where growing season precipitation is low enough to cause crop failures are a constant threat. Precipitation is highly variable in space and time and droughts are difficult to predict with certainty. How were Neolithic farmers able to adapt to and even thrive in such an uncertain environment?
 
-Crop diversification is an excellent example of a widespread and
-effective regulatory feedback strategy (Figure 1). Relying on a mix of
-food types with different climatic tolerances is an efficient way to
-maintain a robust food supply ({\textbf{???}},Anderies2006). In the
-Mediterranean, land-use strategies involving a diversified portfolio of
-wheat and barley have been employed by even the earliest sedentary
-farmers, and continue to be used to this day (Gould
-1963,Slafer1999,Abbo2009a,Marston2011190). Wheat generally has higher
-yields but is sensitive to water deficits, while barley has lower yields
-and is drought tolerant. Planting a mix of wheat and barley, either in
-the same plot or in a combination of plots, is an effective means of
-diversifying grain supplies. By adjusting the ratio of wheat to barley,
-farmers can adapt to changing drought risks.
+Over the past 10,000 years, small-scale subsistence farmers have relied on a suite of strategies to maintain stable food supplies given uncertain rainfall. These strategies include practices like crop diversification, storage, mobility, and exchange (Halstead and O'Shea 1989). Crop diversification in particular is an excellent example of a widespread and effective risk management strategy that is well suited to Mediterranean agroecosystems. In the Mediterranean, land-use strategies involving a diversified portfolio of wheat and barley have been employed by the earliest sedentary farmers and continue to be used to this day (Gould 1963; Araus, Slafer, and Romagosa 1999; Abbo, Lev-Yadun, and Gopher 2010; Weiss and Zohary 2011; Marston 2011). Relying on a mix of food types with different climatic tolerances is an efficient way to maintain a robust food supply (Helmers, Yamoah, and Varvel 2001; Anderies 2006). Wheat is high yielding but drought sensitive, while barley is lower yielding but drought tolerant. Planting a mix of high-yield, high-risk and low-yield, low-risk crops, either in the same plot or in a combination of plots, is an effective means of diversifying the annual supply of staple food crops (Paut, Sabatier, and Tchamitchian 2019). By dynamically adjusting the ratio of wheat to barley in their fields, farmers can adapt to a variety local climate conditions with different drought risks.
 
-The secret to the success of earliest farmers on the mediterrenan
-littoral was in their manipulation of the local ecosystem to manage
-environmental risks. Early farmers constructed a complex agroecosystem
-to manage risk. They needed to maintain stable crop yields in face of
-uncertain drought risks. Yield stability is very important for
-traditional agriculturlal commmunities not connected to larger bulk food
-networks (Abbo et al 2010) neolithic crop package -- weiss zohary 2011
-cite abbo et al 2010? for more stuff about ladraces Wheat/barley systems
-example of system that combines low yield, low wirks crop with high
-yield high risk crop, an effective context paut et al 2019 These
-strategies work when risks are knonw and constant, but may be more
-susceptible to periods of changing climateic risks so understanding how
-people of the past adapted to change is important to us today
-
-Are these crop-diversification strategies vulnerable to the same
-dynamics as other social-ecological systems with similar regulatory
-feedbacks mechanisms? One way to address this is to model the influence
-of imperfect monitoring and biased decision making in uncertain
-environments. In this study, I accomplish this by answering two main
-questions:
+Risk-management strategies like crop diversification require farmers to make specific resource allocation decisions in response to specific environmental risks. As such, they are sensitive to variability in both the spatiotemporal patterns of risk and the ability of individual decision-makers to perceive and act on those patterns. Here, I focus on two main questions:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
 \item
-  How likely are droughts to occur each year in the eastern
-  Mediterreanean, and how did these risks change over the Holocene?
+  How likely were droughts to occur each year in the eastern Mediterranean, and how did these risks change over the Holocene?
 \item
-  How might Neolithic farmers have percieved these changing drought
-  risks, and what were the consequences for farming communities with
-  respect to their collective ability to manage risk?
+  How would Neolithic farmers have perceived these changing risks, and what were the consequences for Neolithic farmers' collective ability to manage them?
 \end{enumerate}
 
-I couple a climate model with high temporal resolution to a simple game
-theoretic model of agricultural decision making under uncertainty, in
-order to examine the performance of optimal and suboptimal wheat-barley
-diversification practices. I model the year-to-year crop diversification
-strategies made by farmers as an iterated game of fictitious play
-against nature (Gould 1963). Farmers are boundedly rational, in that
-they seek to maximize their objective functions given the perceived
-probabilities of different actions by nature, but work with flawed
-mental models of climate-related risks due to imperfect recall of past
-events. Furthermore, by using a climate model to represent the actions
-of nature, I can more precisely capture the characteristic
-autocorrelated patterns of rainfall variability, rather than simply
-drawing rainfall values from a static distribution. This framework
-allows me to address the sensitivity of diversification strategies to
-changes and climatic variability and imperfect human perceptions of
-those changes.
+To address these questions, I first use results from a long-term paleoclimate simulation to estimate the changing risk of agricultural droughts in the eastern Mediterranean over a 4,000-year period in the early to middle Holocene. Then, I use a simulated population of ``belief-based'' Bayesian agents to explore how well individual farmers would have been able to perceive these long-term changes in drought risks given their finite life experiences and limited capacity to process information. This computational approach allows for a more nuanced understanding of the vulnerability of risk-management strategies to unpredictable climatic variability.
 
 \hypertarget{sec:1}{%
 \section{Decision-making in a game against nature}\label{sec:1}}
 
-The basic decision-making problem facing a farmer seeking to diversify
-their crops can be thought of as a game against nature. We can represent
-this simplified decision context as a ``game'' in a game theorietic
-context (Luce raiffa 1989, milnor 1952, Agrawal1968, cassidy1971, gould
-1963). The ``game'' in this context is the farmer's decision of which
-crops to plant and in what proportions, given uncertianty in the future
-``state-of-nature'', and nature varies between several possible states
-such as dry and wet years (Table 1). In reality continuous, but people
-often intuitively solve an easier problem when faced with a complex
-real-world situation (cite behavioral econ or simon). The exact values
-in the payoff matrix here are less important than the relative payoffs
-in each quadrant. We can think of this game as being the
-culturally-inherited object. Our question is how do individuals make
-decisions here? So in this case the cultural norm would be to mix wheat
-and barley, but the learning is in the exact ratio.
+The basic decision-making problem facing a farmer seeking to diversify their crops can be thought of as a ``game against nature'' (Milnor 1952; Gould 1963; Agrawal and Heady 1968; Cassidy, Field, and Kirby 1971; Luce and Raiffa 1989). In the context of decision theory, the ``game'' is the farmer's decision of which crops to plant and in what proportions, given uncertainty in the weather (or the ``state of nature'') in a given year. Assume that farmers are working with a simplified representation of reality and intuitively solve an easier problem when faced with a complex real-world situation (Simon 1990). That is, rather than a continuum of possible states of nature, farmers only care about two categories -- years when it is too dry to plant wheat and years when it is not.
+
+\hypertarget{the-payoff-matrix}{%
+\subsection{The payoff matrix}\label{the-payoff-matrix}}
+
+This simplified decision problem can take the form of a payoff matrix in which the rows represent the moves of the farmer (wheat or barley) and the columns are the moves of nature (dry or normal, Table 1). The matrix is populated with realistic estimates of crop yields derived from isotopic analyses of grain residues at Neolithic sites (Araus, Slafer, and Romagosa 1999). However, the absolute yields are less important for the decision-making problem than the relative sums of each row and column. Given this payoff matrix, what strategies might a farmer use to ``win'' this game and maximize their yields?
 
 \begin{table}
 \centering
-\caption{Estimates of yield volume (t/ha) for ancient wheat and barley varieties derived from [@Slafer1999].}
+\caption{Estimates of yield volume (t/ha) for prehistoric wheat and barley varieties derived from (Slafer et al. 1999). The absolute values here are less important for decision-making than the relative values across each row and column.}
 \begin{tabular}{|l|l|l|}
 \hline
-
  & Dry Year & Normal Year \\ \hline
 Barley Yield & 0.93 & 1.18 \\ \hline
 Wheat Yield & 0 & 1.60 \\ \hline
-
 \end{tabular}
 \end{table}
 
-How should an early farmer make a decision in light ot this uncertainty?
-The basic logic of crop diversitication is Portfolio of crops ala modern
-portfolio theory: Blank2001 Sometimes best to think of nature as a
-sentient opponent out to get you, and play strategically based on that
-assumption. Gould 1963, Beckenkamp 2008 quick overview of criteria
-without risk, then say that a better option is to estimate the
-probabilities of the different state of nature Agrawal1968 talks about
-the strategies in the context of agriculture being a game against nature
-here I can slip in the cool thing about acting like the weather is out
-to get you being a good idea in states of complete uncertainty
-transition -- the problem becomes easier if you have at least some idea
-of nature's moves, because then you cna work to get the highest yeilds
-given the risk of drought. Decision strategies as choosing different
-points -- plot of decisions
+There are several decision criteria a farmer might use in this situation (Milnor 1952; Agrawal and Heady 1968). A risk neutral farmer seeks only to maximize yields in a normal year by planting wheat and hoping for the best, as wheat is the highest yielding crop overall. But, this strategy risks starvation in drought years.
 
-\begin{align}
-a^2+b^2=c^2
-\end{align}
+Instead it is often rational to assume ``nature's'' moves are decided by sentient being bent on one's ruin, and to play strategically as if the worst-case scenario will occur (Gould 1963; Beckenkamp 2008). In the particular form of the wheat-barley game presented in Table 1, a risk sensitive farmer would assume that droughts are inevitable and plant barley to guarantee a minimum acceptable harvest even in the worst-case scenario. This cautious strategy is beneficial in situations of complete uncertainty, but farmers miss out on the high yields they would have received from planting wheat if a drought ultimately does not occur.
+
+\hypertarget{subjective-expected-yields}{%
+\subsection{Subjective expected yields}\label{subjective-expected-yields}}
+
+Playing this ``game'' over many years allows farmers to learn how probable each state of nature is to occur and to adjust their choices accordingly. This strategy is known as playing a game of ``fictitious play'' against nature. If the empirical frequency distribution of wet and dry years is known, the farmer can multiply the crop yields in Table 1 by the probability of each state of nature occurring and plant the crop with the highest \emph{expected} yield (Upton 1987). If the probability of a dry year is denoted \(\theta\), then the expected barley yield is \(\theta \times 0.93 + (1 - \theta) \times 1.18\) and the expected wheat yield is \(\theta \times 0 + (1 - \theta) \times 1.60\). Barley is favored if \(\theta\) is low and droughts are more likely, wheat is favored if \(\theta\) high, and the value of \(\theta\) at which expected barley and wheat yields are the same is known as the point of indifference (Figure \ref{fig:yields}). If a farmer is unsure whether \(\theta\) is above or below the point of indifference, they can plant a mix of crops that maximizes expected yields given their uncertainty in \(\theta\) (Luce and Raiffa 1989). Thus, the exact risk of a drought occurring in any given year and farmers' perceptions of that risk both have major implications for the decision-making process.
 
 \begin{figure}
 \centering
-\includegraphics{manuscript_files/figure-latex/unnamed-chunk-2-1.pdf}
-\caption{Expected wheat and barley yields under increasing drought risk
-with the point of indifference highlighted.}
+\includegraphics{manuscript_files/figure-latex/yields-1.pdf}
+\caption{\label{fig:yields}Expected wheat and barley yields under increasing drought risk. The point of indifference is highlighted, at which point planting either wheat or barley results in the same expected yield.}
 \end{figure}
-
-If an individual can learn about their environment, such as the risk of
-drought in any given year, then they can behave more rationally by
-trying to maximize their subjective expected utility. If the probability
-distributin of nature's moves is known, the farmer can choose the crop
-mix that simply maximizes the expected crop yields given the empirical
-frequency distirubtion of nature's moves. In the language of game
-theory, this strategy is known as a ``game of ficticious play'' against
-nature. This is an effective risk-managing strategy, but like all
-similar strategies that adapt to a specific pattern of variability, it
-is vulnerable to changes in the pattern of variability (Janssen eta al
-2007) This strategy works well when the environment is stationary --
-nature plays from a fixed probability distirubtion, but is vulnerable to
-environmental nonstationarity. That is, when the mean or higher order
-moments of the rainfall distribution shift, playing a game of fictitious
-play can backfire because you're too stuck in your ways while the world
-changes around you. Thus it is important to understand the dynamics of
-risk perception -- how subjective risks, and thus subjective expected
-utility -- rise and fall in uncertain environments.
 
 \hypertarget{sec:2}{%
-\section{Holocene drought risks in the eastern
-Mediterranean}\label{sec:2}}
+\section{Early to mid-Holocene drought risks}\label{sec:2}}
 
-Estimates of drought risk in the eastern Mediterranean during the the
-past 10,000 years were derived from outputs of the TraCE-21k
-paleoclimate simulation available on the National Center for Atmospheric
-Research. TraCE-21K is a state-of-the-art simulation that uses a coupled
-atmosphere-ocean general circulation model (GCM) to recreate the
-transient response of the global climate system to changes in the
-Earth's orbit and greenhouse gasses over the past 22,000 years from the
-Last Glacial Maximum to the present (He 2011). It generates physically
-consistent spatiotemporal climate dynamics, driven by current best
-estimates of climate forcings (e.g.~orbit, greenhouse gasses, glacial
-meltwater flux). The model simulates these dynamics on a six hourly
-timescale, and model outputs are archived at a monthly resolution.
+In order to estimate drought risks in the past, present-day weather observations alone are insufficient. Precipitation varies not only from year-to-year, but also on centennial to millennial-scale time scales that are unresolved in the contemporary observational record. Climate dynamics are non-linear, non-stationary, and non-ergodic, which means sudden, unpredictable variability is the norm rather than the exception.
 
-TraCE-21k simulation outputs for the past 10,000 years were extracted
-from the grid cell overlaying the northern Levant and southeastern
-Turkey. This location was selected due to its proximity to
-archaeological sites with comparative evidence of crop diversification
-strategies. This region includes some of the earliest evidence of crop
-domestication, including sites like Jericho and Can Hasan.
+Estimates of past climate variability derived from paleoclimate simulations provides a richer representation of not only the first order statistics of the climate system (e.g.~the mean and variance of precipitation) but also the higher order patterns such as the serial persistence of wet and dry years. These estimates present a more realistic picture of the inherent year-to-year uncertainty in the climate system and presents a more realistic challenge to simple risk-managing strategies that assume climatic risks are fixed.
 
-Using the climate model output, I divided each model year into dry years
-and wet years. A dry year was any year where less than 300mm of rain
-fell during the wet season (October-May), the threshold below which
-wheat crops will generally fail ({\textbf{???}}), and a wet/normal year
-was defined as any year above this threshold. Given the modeled patterns
-of wet and dry years, drought risk for any particular year was defined
-as the proportion of the previous 50 years that were dry years. Using
-the simulated paleoclimate, rather than modern-day weather station
-observations or paleoclimate proxies, allows us to estimate not just the
-first order statistics of the climate system (mean, variance of dry
-years) but also the higher order dynamics like serial autocorrelation in
-the perisistence of wet and dry years. This presents a much more
-realistic picture of the inherent year-to-year uncertainty in the
-climate system, and presents a challenge to simple risk-managing
-strategies that assume climatic risks are fixed.
+\hypertarget{paleoclimate-simulation}{%
+\subsection{Paleoclimate simulation}\label{paleoclimate-simulation}}
+
+Estimates of changing Holocene precipitation variability were derived from the TraCE-21ka paleoclimate simulation (He 2011). TraCE-21ka is a state-of-the-art simulation that uses a coupled atmosphere-ocean general circulation model to recreate the transient response of the global climate system to changes in the Earth's orbit and greenhouse gas concentrations from the Last Glacial Maximum to the present. The simulation generates physically consistent spatiotemporal climate dynamics, driven by current best estimates of external climate drivers (e.g.~Earth's orbit, greenhouse gasses, glacial meltwater flux). The model simulates these dynamics on a six-hourly timescale, and model outputs are archived at a monthly resolution. For this analysis, monthly TraCE-21ka precipitation outputs were extracted from the 3.75° grid cell covering Central Anatolia. This location was selected to capture climate variability typical for major Neolithic settlements in the region, such as Çatalhöyük and Aşıklı Höyük, and for the eastern Mediterranean more broadly.
+
+\hypertarget{estimating-drought-risks}{%
+\subsection{Estimating drought risks}\label{estimating-drought-risks}}
+
+Using the climate model output, I divided each model year into dry years and normal years. A dry year was any year where less than 300mm of rain fell during the wet season (October-May), the threshold below which wheat crops will generally fail (Wilkinson 1997) and a normal year was defined as any year above this threshold. Given the modeled patterns of normal and dry years, the ``objective'' climatic drought risk \(\hat\theta\) for any particular year was defined as the proportion of the previous 50 years that were dry years:
+\begin{equation}
+    \hat\theta = \frac{\sum_{n=t-1}^{t-50} P_n < 300}{50},
+\end{equation}
+where \(P_n\) is the growing season precipitation accumulation in millimeters for year \(n\).
+
+The simulated risks of crop failure due to drought ranged between 10\% and 46\% during the period from 9.5ka to 5.5ka, with a median risk of 24\% (Figure \ref{fig:risk}). On average, a Neolithic farmer in Central Anatolia could expect their wheat crops to fail two or three times a decade, punctuated by even drier periods in which wheat crops could be expected to fail roughly every other year. The simulation also reveals a long-term trend of decreasing drought risks, in particular with higher drought risk in the early Holocene giving way to lower drought risk in the middle Holocene.
 
 \begin{figure}
 \centering
-\includegraphics{manuscript_files/figure-latex/unnamed-chunk-5-1.pdf}
-\caption{Annual risk of wheat crop failure due to drought, averaged by
-fifty-year period. The dashed line indicates the level of risk beyond
-which one would plant barley over wheat to maximize subjective expected
-yields, given the payoffs defined in Table 1.}
+\includegraphics{manuscript_files/figure-latex/risk-1.pdf}
+\caption{\label{fig:risk}Annual risk of wheat crop failure due to drought aggregated by fifty-year period. The dashed line indicates the level of risk beyond which one would plant barley over wheat to maximize subjective expected yields (after Figure 1, given the payoffs in Table 1).}
 \end{figure}
+
+The TraCE-21ka simulation confirms that drought risk in the eastern Mediterranean was non-stationary and, in fact, quite volatile during periods of climatic disruption in the early Holocene. This volatility would have had severe consequences for early farming communities whose risk-managing practices depended so heavily on accurately perceived local climatic risks.
 
 \hypertarget{sec:3}{%
-\section{The dynamics of risk perception}\label{sec:3}}
+\section{Modeling risk perception}\label{sec:3}}
 
-In order to manage risk, decision-makers must be perceive what exactly
-that risk is in the local environment. An individual's perceived risk
-entails more than simply the ``objective'' risk in the external
-environment (Tucker et al. 2013). A person's perceived risk depends in
-large part on their past experience, and how those experiences shape
-their expectations for the future. Likewise, the social responses to
-risk will refelct the distribution of perceived risks in a population,
-and by extension the collective memory of past droughts will have
-consequences for the population's survival and evolution.
+In order to properly manage drought risk, a farmer must first be able to perceive that risk. Yet, a farmer's perception of risk reflects more than just the objective, empirical risk observable in the world around them (Tucker 2007; Tucker et al. 2013; Findlater, Satterfield, and Kandlikar 2019). Individual risk perception is inherently subjective, influenced by a person's past experience of dry and wet years as filtered through memory, and can reflect varying levels of uncertainty. Likewise, the distribution of individuals' perceived risks within a population influences the collective perception of drought risks and the potential aggregate societal-level response to those risks (Moussaïd 2013; Amaral and Javarone 2020). But how best to model risk perception at the individual level?
 
-We can capture the influences of risk perception computationally by
-simulating a population of ``belief-based agents.'' These agents develop
-beliefs about the risk of drought in their environment through personal
-experience. Each agent's perceived drought risks will change their
-subjective expected crop yields from planting different ratios of wheat
-to barley.
+\hypertarget{prior-beliefs-and-bayesian-agents}{%
+\subsection{Prior beliefs and Bayesian agents}\label{prior-beliefs-and-bayesian-agents}}
 
-\hypertarget{bayesian-brains}{%
-\subsection{Bayesian brains}\label{bayesian-brains}}
+The human brain does not record every bit of perceived information in memory, rather it stores a ``compact encoding'' of that information which it uses for future decision-making (Gallistel et al. 2014). Integrating the tools of agent-based modeling and Bayesian probability provide an elegant means of representing this process. A Bayesian agent is one whose subjective beliefs can be represented as a probability distribution over possible states of nature (Cushman and Macindoe 2009; Pope and Gimblett 2015). This approach has a clear computational efficiency for both modelers and decision-makers. Even if real-world decision makers are not Bayesian in a literal, mathematical, sense, the basic algorithmic problems faced by the brain and the solutions them which it has evolved reflect the same constraints on information processing in the minds of decision-makers (Bonawitz et al. 2011; Sanborn and Chater 2016; Khalvati et al. 2019).
 
-We can efficiently simulate these population-level risk perceptions in a
-population of agents with Bayesian brains (Kahvalti et al 2019 double
-check). Bayesian learning allows for a minimal representation of the
-environemnt, so that each agent's beliefs can be encoded in two
-parameters -- defining the Beta distribution over their prior beliefs --
-rather than the record of all observed years. Not only does this
-approach have a clear computational efficiency, but for the same reason
-this reflects the processes actually going on in the heads of decision
-makers. Our brains do not record every bit of perceived informaiton in
-memory, rather it stores a ``compact encoding'' of that information
-which it uses for future decisions. Even if individuals aren't --
-consciously or unconsciously --- making these calculations -- the basic
-algorithmic problem faced by the brain, and solutions it has evolved,
-reflect the same basic sets of constraints (Sanborn and Chater 2016).
+We can examine the dynamics of risk perception using a population of Bayesian agents that develop beliefs about the risk of drought through their personal experience of the weather. These perceptions impact their decision-making by altering their subjective expected crop yields from planting different crop mixes. Here, occurrence of a drought in any given year is treated as a draw from Bernoulli distribution (i.e.~a coin flip) with parameter \(\theta\) representing the drought probability. The beta distribution is a natural choice for representing knowledge about probabilities because it is constrained to fall between 0 and 1. Hence, an individual agent's prior belief about the plausible value of \(\theta\) can be represented as
+\begin{equation}
+  \theta \sim \textrm{Beta}(\alpha, \,\beta),
+\end{equation}
+a beta distribution with the parameters \(\alpha\) and \(\beta\) corresponding to the number of dry and wet years previously experienced by that agent. Varying these two parameters thus allows for the representation of a variety of different personal experiences of drought risk. For example, if an agent recalls having lived through 5 dry years and 25 normal years, their prior belief about the chance of a drought occurring in the following year would be represented as a Beta(5, 25) distribution with mean value 0.2 equivalent to the empirical drought risk (\(\hat\theta\)) for that period.
+
+Using probabilities to represent agents' beliefs also allows for estimation of the uncertainty in those beliefs (Figure \ref{fig:prior-prob}). A simple Bayesian agent becomes more certain in their beliefs with age. For example, an agent who experienced 5 wet and 10 normal years and one who experienced 25 wet and 50 normal years would both agree that, on average, droughts occur 50\% of the time. Yet the latter agent would be much more certain in this belief because it is drawn from a larger range of experience (i.e.~a larger sample size). We can thus represent the exact information content of each individual agent's subjective experience of droughts using the diffusion of this prior belief. How, then, should an agent update its beliefs in light of new experience?
 
 \begin{figure}
 \centering
-\includegraphics{manuscript_files/figure-latex/unnamed-chunk-6-1.pdf}
-\caption{Development of an individual's perceived drought risk with
-time, assuming a fixed drought risk of 0.5. Beliefs are represented as
-Beta probabiity distributions, and the increased certainty with age
-reflects the varying effective sample size of the Beta prior.}
+\includegraphics{manuscript_files/figure-latex/prior-prob-1.pdf}
+\caption{\label{fig:prior-prob}Development of an individual's perceived drought risk with time, assuming a fixed drought risk of 0.5. Beliefs are represented as beta distributions, and the increased certainty with age reflects the varying effective sample size of the beta prior.}
 \end{figure}
 
-\hypertarget{bayesian-learning-from-bernoulli-observations}{%
-\subsubsection{Bayesian learning from bernoulli
-observations}\label{bayesian-learning-from-bernoulli-observations}}
+\hypertarget{bayesian-updating-and-the-weight-of-past-experience}{%
+\subsection{Bayesian updating and the weight of past experience}\label{bayesian-updating-and-the-weight-of-past-experience}}
 
-We can treat this problem elegantly using bayesian statistics using
-online bayesian learning from bernoulli objersbations (Bissiri 2010).
-Put simply, the probability of a drought occuring in any given year is
-treated as a coin flip (i.e.~bernoulli distribution) with paramter theta
-reprenting the risk of drought. Uncertainty in the value of theta can be
-represented with a beta distribution, constrained between 0 and 1
-(Figure XX). We can thus represent the exact information content of each
-individual agent's subjective experience of droughts using the diffusion
-of the prior belief. What we see here is how an indiviudal's perception
-of the risk of drought may start off diffuse at first (here as an
-uniformative flat prior in which all values of theta are equally likely.
-As each year of experience is observed, the agent updates its beliefs
-accordingly, balancing the information in this year's observation with
-the cumulative weight of experience.
+As a Bayesian agent must be able to update its beliefs as it moves through time and observes each successive year's weather. It does so by comparing the information in this year's observation with the cumulative weight of their past experience. The agent combines its prior beliefs about drought risk with the likelihood of having observed a drought in the current year in order to generate a posterior distribution representing its updated beliefs about the world.
 
-A simple ``fixed'' bayesian learner thus gets more certain with age. For
-young agents with weak priors, the information of each new year can
-strongly influence their beliefs. For older agents who have experienced
-many more years their priors will be stronger, and they will be less
-likely to update their beliefs when balancing the information from a
-single year with the many decades of accumulated experience. As was the
-case with the simple game of ficitious play above, this strategy is fine
-when the environment is stable and risks do not change. But when there
-is volatility in the environment, and risks can change, it becomes
-important to change your mind. Being too inflexible in one's priors can
-lead being too optimistic when things have really changed for the worse,
-and alternately being too conservative when things finally do get
-better. So from a Bayesian learning standpoint, how should agents choose
-to believe new information.
+Crucially, the strength of one's prior beliefs determines how much weight is given to new information (Figure \ref{fig:posterior}). For example, assume two agents -- one aged 15 and the other aged 50 -- who have only ever experienced a normal climate where droughts happen on average two out of every ten years. The mean value of \(\theta\) for both agents would thus be 20\%, but the degree of certainty varies because the older agent bases its inference on many more years of experience than the younger agent. Now, assume the climate suddenly changes such that the drought risk is doubled to 40\% for the next 25 years, not an uncommon occurrence in the simulation of early to mid-Holocene climate. Because the prior beliefs of the agents were so different, their subjective beliefs after the drought are also different even though both experienced the same climate.
 
-\hypertarget{the-problem-of-nonstationarity}{%
-\subsubsection{The problem of
-nonstationarity}\label{the-problem-of-nonstationarity}}
+For young agents with weak priors, the information of each new year can thus strongly influence their beliefs. But older agents -- having more experience and stronger priors -- will be less likely to update their beliefs when comparing the information from a single year's weather with previous decades' worth of accumulated experience. Although neither agent may perceive the ``true'' climatic drought risk exactly, they nevertheless reflect perfectly rational beliefs about the world. Both agents have rational beliefs and differ only in their prior subjective beliefs. Their relative conservatism or flexibility are not biases, but rather varying perspectives on an inherently uncertain world.
 
-That is, what if the risk of a drought, theta, is not a constant but
-rather varies unpredictably in time? The statistical problem shifts then
-to one of change detection (o'reilly 2013, gallistel et al 2014). In
-other words do people simply adapt to changes -- as in the fixed
-bayesian learner and moving average approaches -- or do they detect
-them? Strict year-to-year updating can result in overly conservative
-risk perceptions, suggesting people are slow to change their beliefs
-when in reality they often quickly update them (Bissiri 2010). Indeed,
-the ``forgetful bayesian brain'' model seems to perform better, with a
-dynamic rather than fixed bayesian belief model (Zhang and Yu 2013).
+As was the case in the game of fictitious play discussed in Section \ref{sec:1}, a degree of conservatism is warranted when the environment is stable and risks do not vary. But, when the environment is volatile, the ability to change one's mind is crucial (Gallistel et al. 2014). Being too inflexible in one's priors can lead to decisions that are too optimistic when conditions really have changed for the worse. Conversely, inflexible priors can fail to take advantage of good conditions.
 
 \begin{figure}
 \centering
-\includegraphics{manuscript_files/figure-latex/unnamed-chunk-7-1.pdf}
-\caption{Change in perceived drought risks in an older (50) and younger
-(15) agent before and after a 25-year dry period.}
+\includegraphics{manuscript_files/figure-latex/posterior-1.pdf}
+\caption{\label{fig:posterior}Change in perceived drought probability in an older (50) and younger (15) agent before and after a 25-year dry period.}
 \end{figure}
 
-So what are the consequences of these cognitive processes for early
-farmers in the Mediterranean.
+\hypertarget{sec:4}{%
+\section{Risk management and the dynamics of risk perception}\label{sec:4}}
 
-Simulate a time series with varying drought frequency. This is a
-stepwise nonstationary process. Setup an experiment exploring 6
-scenarios.
+The previous example established some basic intuitions for how agents with varying subjective beliefs can perceive risk differently. But it represents an idealized situation where agents update their beliefs retrospectively after a many-year dry period. Farmers, on the other hand, must update their planting decisions each year and continuously monitor the weather around them. The transient, year-to-year changes in perceived risks can thus have major consequences for how a population responds \emph{during} a dry period. How do Bayesian learners perform in such an uncertain, unpredictable time?
 
-This suggests that people are more in danger of not realizing conditions
-are improving when they actually have -- the opportunity cost -- rather
-than failing to realize the change in the firstplace. The law of small
-numbers is very important here. The range of each person's experience is
-so small -- every individual's perceived risk will be a small and noisy
-sample of the true value. Older people are much more certain, even
-though they are wrong.
+To explore these dynamics further we can simulate random sequences of wet and dry years and see how a population of Bayesian agents responds to this sequence in time. A 75-year period of low (20\%) drought risks is punctuated by an abrupt 25-year dry period during which drought risk doubles. Here, observations are made about the world sequentially, and agents must continuously update their beliefs. As in the previous section, an agent's prior belief about drought risk is updated in light of new experience to generate a posterior perception of risk. Now, however, agents update their beliefs every year and thus only a year's worth of new information is incorporated into the agents' priors at each time step. This learning process is iterative, as an agent's posterior distribution in one year becomes their prior following year and the updating process repeats itself. Formally, this iterative process is known as ``online'' learning from Bernoulli observations, where ``online'' refers to the sequential, year-to-year updating (Bissiri and Walker 2010).
 
-\includegraphics{manuscript_files/figure-latex/unnamed-chunk-12-1.pdf}
+The results of this simulation reveal the importance of the subjective experiences of individual decision makers on the population-level perception of risk (Figure \ref{fig:dynamics}a). In this learning environment, isolating signal from noise becomes critical for accurately perceiving evolving drought risks. All agents begin the simulation with diffuse subjective beliefs about drought risk, but as they begin to learn the collective subjective beliefs approaches the objective risk level. The agents are slow to update their beliefs during the 25-year dry period because drought years, while increasingly frequent, are still few enough not to outweigh their prior beliefs. Some agents may perceive gradual changes, but the population as a whole does not perceive the change in climate until more than a decade after it has begun.
 
-These two plots begin to look more alike the more you sample, which
-makes sense because its an ergodic system.
+The agents are even slower to realize when the dry period is over. Indeed, the dry period made a strong enough imprint on the population's collective memory that the they perceive droughts to be much more probable than they actually are for decades after conditions have ameliorated once and for all. These biased perceptions have consequences for collective ability of the population to manage risk, because uncertainty in whether drought risks are above or below the indifference point informing the mix of crops to plant (Figure \ref{fig:dynamics}b). Once again, the skewed perceptions of increased drought risks last long after the dry period ends, reflected in a much higher ratio of barley to wheat -- a more cautious crop mix than is rational given the objective risk of drought in the environment.
 
-Note in these plots above and below we're summing all the wheat and
-barley in the population, compared to below which shows the wheat
-proportions of individuals.
+\begin{figure}
+\centering
+\includegraphics{manuscript_files/figure-latex/dynamics-1.pdf}
+\caption{\label{fig:dynamics}A) Perceived drought risks in a population of Bayesian agents before and after a drought (grey band). The dashed red line represents the level of risk at which an agent is indifferent between planting wheat and barley. B) Crop mix over time, calculated based on the degree of dispersion above and below the indifference level in A.}
+\end{figure}
 
-\hypertarget{discussion-and-conclusions}{%
-\section{Discussion and Conclusions}\label{discussion-and-conclusions}}
+\hypertarget{conclusion}{%
+\section{Conclusion}\label{conclusion}}
 
-The bias-corrected wet season precipitation outputs from TraCE-21k show
-a relatively stationary distribution over the past 10,000 years, with
-slightly drier conditions during the early-mid Holocene transition at
-c.a. 8ka BP (Figure 5). The utility of a diversified wheat-barley crop
-is immediately apparent; rainfall often fails to meet the 300mm
-threshold for a productive wheat crop during the entire 10,000 year
-span, but drops below the threshold for barley only a handful of years.
+In this chapter, I explored the consequences of individual heterogeneity in risk perception on the risk-management practices of a simulated Neolithic farming community. I used a long-term paleoclimate simulation over the eastern Mediterranean to estimate the changing risks of agricultural drought over a 4,000-year time period spanning the early to mid-Holocene. Over this time, wheat crops would have been expected to fail from drought between once every ten years to nearly once every two years. Changes in risk of such magnitude would have severely impacted Neolithic agroecosystems in the long run but would have been difficult for any individual farmer to perceive in the short run.
 
-The risk of crop failure due to drought in any given year varies between
-10\% and 20\%, punctuated by one to four century-long events where risk
-drops as low as 6\% and or exceeds 25\% (Figure 6). Centuries of high
-drought risk cluster around known periods of regional and global climate
-deterioration, such as at 8.6ka BP and 4.2ka BP.
+To explore these dynamics, I simulated a population of ``belief-based'' Bayesian agents who use their subjective perception of annual drought risks to decide what mix of crops will best manage those risks. During periods of climatic stability, allowing past experiences to influence decision making helps farmers minimize the impacts of \emph{predictable} drought. But past experiences are less informative during periods of rapid climate change, and even farmers who manage risk ``optimally'' in light of their prior beliefs can experience food shortfalls. Cognitive diversity and life experience can be as or more important than the exact mix of crops planted for a population's long-term survival under extreme uncertainty.
 
-Given the average drought risks estimated from TraCE-21k and assuming
-perfect monitoring and recall of recent droughts (i.e. \(\lambda = 0\)),
-farmers intent on minimizing the risk of crop failure would be expected
-to plant about 65\% barley to 35\% wheat on average. This proportion is
-within the range estimated from macrobotanical remains at a nearby
-archaeological site ({\textbf{???}}). Yield maximizing farmers instead
-play a pure strategy profile, planting wheat if the perceived drought
-risk is less than 0.68 and barley if it is more. Because the
-GCM-simulated drought risk never rises above this threshold, a
-yield-maximizing farmer will always plant a wheat monocrop.
+These dynamics have implications for understanding risk management and food production in the Neolithic. Two points arise from this model that clarify our understanding of the earliest farming communities in the Mediterranean and can inform future simulation work:
 
-Examining the long-term dynamics of crop yields among all
-decision-making strategies and psychological profiles reveals
-variability in yields due to different decision making preferences is
-far greater variability due to differences in risk perception (Figure
-7). Risk-minimizing strategies sacrifice productivity for
-predictability, consistently lowering the mean and variance of crop
-yields over time. Risk-minimizing strategies are more sensitive to risk
-perception than yield-maximizing strategies; varying the memory decay
-rate parameter \(\lambda\) had no effect on the optimal crop allocation
-for yield maximizers.
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Risk perception is difficult.} The climate system is inherently chaotic. Annual forecasts are fundamentally uncertain, even in the era of modern supercomputers and numerical weather prediction. For prehistoric farmers, this uncertainty would have been an existential challenge. With the end of the Last Glacial Maximum and the advent of the Holocene, precipitation became increasingly volatile on multiple time scales. This uncertainty in the objective drought risk is compounded by uncertainty in individual farmers' subjective perception of drought risk. Any individual would have experienced only a brief snapshot of this complex period. The rhythms of human lifespans are out of sync with the centennial to millennial scale oscillations in the climate system, so even the predictive value of one's own experience is itself unpredictable. This fundamental uncertainty would have influenced far more than the choice of which type of crops to plant and would have pervaded all kinds of decision-making under risk.
+\item
+  \textbf{Individual risk perception has consequences for collective risk management.} Individuals of different ages may perceive the same dry period differently depending on their prior life experience. Younger individuals are more likely to perceive a run of dry years as a trend, rather than a temporary deviation from the norm, and older individuals are likely to do the opposite. By extension, the age structure of a population will influence how quickly it is able to perceive and adapt to a changing climate. For example, a young, fast growing population will have a different collective memory of a past drought event than an older population. Likewise, famines, warfare, epidemics, and other crises that afflict specific age classes will alter the time horizon of that population's collective memory. Individual heterogeneity in risk perceptions can thus play a key role in broader social responses to climatic risks.
+\end{enumerate}
 
-During periods of climatic stability, allowing past experiences to
-influence decision making helps farmers minimize the impacts of
-\emph{predictable} drought. But past experiences are less informative
-during periods of rapid climate change, and even farmers who manage risk
-``optimally'' experience major food shortfalls. Climatically-induced
-variability in food supplies consistently surpasses that from
-differences in risk-perception psychology, but not that from different
-risk aversion preferences. This finding suggests that the efficacy of
-risk managing strategies that rely on regulatory feedbacks is limited to
-periods of relative climatic stability. This is consistent with the
-observation from the Roman Period Mediterranean that while minor food
-crises were common in the ancient world, extreme famines were rare
-(Garnsey 1989).
-
-Statistically downscaling palaeoclimate simulations and coupling them to
-game theoretic models of decision making under uncertainty is a simple
-way to better understand the patterning of climate changes and the
-regulatory feedbacks farmers use to adapt to them. To further explore
-these patterns, future work should incorporate additional
-risk-minimizing strategies such as storage and exchange. Food storage
-and exchange can also be thought of as forms of diversification, the
-former in the time and the latter in space ({\textbf{???}}). Food
-exchange would be of particular interest from a game theoretic
-perspective, as incomplete information with respect to an exchange
-partner's crop diversification and storage practices can lead to
-situations of moral hazard.
-
-Think about the importance of the population's age structure, becuase
-that's going to impact the collective memory of drought.
+Relating collective knowledge to individual perception and cognition is essential for understanding human behavior in complex social-ecological systems (Beratan 2007; Pope and Gimblett 2015). Although social learning and cumulative cultural evolution have not been the focus of this chapter, these findings provide insight into the individual learning dynamics that underlay those broader social processes. This chapter has focused primarily on the physical and cognitive dimensions of risk and risk perception. The social context of risk and risk perception can be equally consequential (Rogers 1997). The balance of individual learning with social transmission determines the collective perception of risks and its impact on collective memory (Moussaïd 2013; Candia et al. 2019). Our finite lifespans ultimately limit the skill of individual learning over the long term, and cumulative cultural evolution is necessary for continued survival.
 
 \setlength{\parindent}{-0.5in}
 \setlength{\leftskip}{0.5in}
 \setlength{\parskip}{8pt}
 
 \hypertarget{references}{%
-\section*{References}\label{references}}
-\addcontentsline{toc}{section}{References}
+\section{References}\label{references}}
+
+\noindent
 
 \hypertarget{refs}{}
-\leavevmode\hypertarget{ref-Garnsey1989}{}%
-Garnsey, Peter. 1989. \emph{Famine and Food Supply in the Graeco-Roman
-World: Responses to Risk and Crisis}. Cambridge University Press.
+\leavevmode\hypertarget{ref-Abbo2010}{}%
+Abbo, Shahal, Simcha Lev-Yadun, and Avi Gopher. 2010. ``Yield stability: an agronomic perspective on the origin of Near Eastern agriculture.'' \emph{Vegetation History and Archaeobotany} 19 (2): 143--50. \url{https://doi.org/10.1007/s00334-009-0233-7}.
+
+\leavevmode\hypertarget{ref-Agrawal1968}{}%
+Agrawal, R. C., and E. O. Heady. 1968. ``Applications of Game Theory Models in Agriculture.'' \emph{Journal of Agricultural Economics} 19 (2): 207--18. \url{https://doi.org/10.1111/j.1477-9552.1968.tb01326.x}.
+
+\leavevmode\hypertarget{ref-Amaral2020}{}%
+Amaral, Marco A., and Marco A. Javarone. 2020. ``Heterogeneity in evolutionary games: an analysis of the risk perception.'' \emph{arXiv Preprint}, 1--7. \url{http://arxiv.org/abs/2002.06645}.
+
+\leavevmode\hypertarget{ref-Anderies2006}{}%
+Anderies, John Martin. 2006. ``Robustness, institutions, and large-scale change in social-ecological systems: the Hohokam of the Phoenix Basin.'' \emph{Journal of Institutional Economics} 2 (02): 133. \url{https://doi.org/10.1017/S1744137406000312}.
+
+\leavevmode\hypertarget{ref-Slafer1999}{}%
+Araus, J. L., G. A. Slafer, and I. Romagosa. 1999. ``Durum wheat and barley yields in antiquity estimated from 13C discrimination of archaeological grains: a case study from the Western Mediterranean Basin.'' \emph{Australian Journal of Plant Physiology} 26 (4): 345. \url{https://doi.org/10.1071/PP98141}.
+
+\leavevmode\hypertarget{ref-Beckenkamp2008}{}%
+Beckenkamp, Martin. 2008. ``Playing Strategically against Nature? Decisions Viewed from a Game-Theoretic Frame.'' Bonn. \url{https://doi.org/10.2139/ssrn.1275287}.
+
+\leavevmode\hypertarget{ref-Beratan2007}{}%
+Beratan, Kathi K. 2007. ``A cognition-based view of decision processes in complex social-ecological systems.'' \emph{Ecology and Society} 12 (1). \url{https://doi.org/10.5751/es-02103-120127}.
+
+\leavevmode\hypertarget{ref-Bissiri2010}{}%
+Bissiri, Pier Giovanni, and Stephen G. Walker. 2010. ``On Bayesian learning from Bernoulli observations.'' \emph{Journal of Statistical Planning and Inference} 140 (11): 3520--30. \url{https://doi.org/10.1016/j.jspi.2010.05.023}.
+
+\leavevmode\hypertarget{ref-Bonawitz2011}{}%
+Bonawitz, Elizabeth, Stephanie Denison, Annie Chen, Alison Gopnik, and Thomas L Griffiths. 2011. ``A simple sequential algorithm for approximating bayesian inference.'' In \emph{Proceedings of the 33rd Annual Conference of the Cognitive Science Society}, 2463--8. \url{papers://a6591aa3-238d-4eda-a3d9-0181a4361186/Paper/p1438\%20http://palm.mindmodeling.org/cogsci2011/papers/0582/paper0582.pdf}.
+
+\leavevmode\hypertarget{ref-Candia2019}{}%
+Candia, Cristian, C. Jara-Figueroa, Carlos Rodriguez-Sickert, Albert László Barabási, and César A. Hidalgo. 2019. ``The universal decay of collective memory and attention.'' \emph{Nature Human Behaviour} 3 (1): 82--91. \url{https://doi.org/10.1038/s41562-018-0474-5}.
+
+\leavevmode\hypertarget{ref-Cassidy1971}{}%
+Cassidy, R. G., C. A. Field, and M. J. L. Kirby. 1971. ``Random payoff games with partial information: One person games against nature.'' \emph{Revue Française d'informatique et de Recherche Opérationnelle} 5 (3): 3--17.
+
+\leavevmode\hypertarget{ref-Cushman2009}{}%
+Cushman, Fiery, and O Macindoe. 2009. ``The coevolution of punishment and prosociality among learning agents.'' \emph{Proceedings of the Annual Conference of the Cognitive Science Society} 31 (31): 1774--9. \url{http://141.14.165.6/CogSci09/papers/374/paper374.pdf}.
+
+\leavevmode\hypertarget{ref-Findlater2019}{}%
+Findlater, Kieran M., Terre Satterfield, and Milind Kandlikar. 2019. ``Farmers' Risk-Based Decision Making Under Pervasive Uncertainty: Cognitive Thresholds and Hazy Hedging.'' \emph{Risk Analysis}. \url{https://doi.org/10.1111/risa.13290}.
+
+\leavevmode\hypertarget{ref-Gallistel2014}{}%
+Gallistel, C. R., Monika Krishan, Ye Liu, Reilly Miller, and Peter E. Latham. 2014. ``The perception of probability.'' \emph{Psychological Review} 121 (1): 96--123. \url{https://doi.org/10.1037/a0035232}.
 
 \leavevmode\hypertarget{ref-GOULD1963a}{}%
-Gould, Peter R. 1963. ``Man Against His Environment: A Game Theoretic
-Framework.'' \emph{Annals of the Association of American Geographers} 53
-(3): 290--97. \url{https://doi.org/10.1111/j.1467-8306.1963.tb00450.x}.
+Gould, Peter R. 1963. ``Man Against His Environment: A Game Theoretic Framework.'' \emph{Annals of the Association of American Geographers} 53 (3): 290--97. \url{https://doi.org/10.1111/j.1467-8306.1963.tb00450.x}.
 
 \leavevmode\hypertarget{ref-Halstead1989}{}%
-Halstead, Paul, and John O'Shea. 1989. ``Introduction: cultural
-responses to risk and uncertainty.'' In \emph{Bad Year Economics:
-Cultural Responses to Risk and Uncertainty}, edited by Paul Halstead and
-John O'Shea, 1--7. Cambridge: Cambridge University Press.
-\url{https://doi.org/10.2307/281441}.
+Halstead, Paul, and John O'Shea. 1989. ``Introduction: cultural responses to risk and uncertainty.'' In \emph{Bad Year Economics: Cultural Responses to Risk and Uncertainty}, edited by Paul Halstead and John O'Shea, 1--7. Cambridge: Cambridge University Press. \url{https://doi.org/10.2307/281441}.
 
 \leavevmode\hypertarget{ref-He2011}{}%
-He, Feng. 2011. ``Simulating Transient Climate Evolution of the Last
-Deglatiation with CCSM3.'' PhD thesis, Madison.
+He, Feng. 2011. ``Simulating Transient Climate Evolution of the Last Deglatiation with CCSM3.'' PhD thesis, Madison.
+
+\leavevmode\hypertarget{ref-Helmers2001}{}%
+Helmers, G. A., C. F. Yamoah, and G. E. Varvel. 2001. ``Separating the impacts of crop diversification and rotations on risk.'' \emph{Agronomy Journal} 93 (6): 1337--40. \url{https://doi.org/10.2134/agronj2001.1337}.
+
+\leavevmode\hypertarget{ref-Khalvati2019}{}%
+Khalvati, Koosha, Seongmin A. Park, Saghar Mirbagheri, Remi Philippe, Mariateresa Sestito, Jean-Claude Dreher, and Rajesh P. N. Rao. 2019. ``Modeling Other Minds: Bayesian Inference Explains Human Choices in Group Decision Making.'' \emph{Science Advances} in press (November): aax8783. \url{https://doi.org/10.1101/419515}.
+
+\leavevmode\hypertarget{ref-Luce1989}{}%
+Luce, R Duncan, and Howard Raiffa. 1989. \emph{Games and decisions: Introduction and critical survey}. Courier Corporation.
+
+\leavevmode\hypertarget{ref-Marston2011}{}%
+Marston, John M. 2011. ``Archaeological markers of agricultural risk management.'' \emph{Journal of Anthropological Archaeology} 30 (2): 190--205. \url{https://doi.org/10.1016/j.jaa.2011.01.002}.
+
+\leavevmode\hypertarget{ref-Milnor1952}{}%
+Milnor, John. 1952. ``Games against nature.'' The RAND Corporation.
+
+\leavevmode\hypertarget{ref-Moussaid2013}{}%
+Moussaïd, Mehdi. 2013. ``Opinion formation and the collective dynamics of risk perception.'' \emph{PLoS ONE} 8 (12): 1--8. \url{https://doi.org/10.1371/journal.pone.0084592}.
+
+\leavevmode\hypertarget{ref-Paut2019}{}%
+Paut, Raphaël, Rodolphe Sabatier, and Marc Tchamitchian. 2019. ``Reducing risk through crop diversification: An application of portfolio theory to diversified horticultural systems.'' \emph{Agricultural Systems} 168: 123--30. \url{https://doi.org/10.1016/j.agsy.2018.11.002}.
+
+\leavevmode\hypertarget{ref-Pope2015}{}%
+Pope, Aloah J., and Randy Gimblett. 2015. ``Linking Bayesian and agent-based models to simulate complex social-ecological systems in semi-arid regions.'' \emph{Frontiers in Environmental Science} 3 (AUG): 1--9. \url{https://doi.org/10.3389/fenvs.2015.00055}.
+
+\leavevmode\hypertarget{ref-Rogers1997}{}%
+Rogers, George O. 1997. ``The dynamics of risk perception: How does perceived risk respond to risk events?'' \emph{Risk Analysis} 17 (6): 745--57. \url{https://doi.org/10.1111/j.1539-6924.1997.tb01280.x}.
+
+\leavevmode\hypertarget{ref-Sanborn2016}{}%
+Sanborn, Adam N., and Nick Chater. 2016. ``Bayesian Brains without Probabilities.'' \emph{Trends in Cognitive Sciences} 20 (12): 883--93. \url{https://doi.org/10.1016/j.tics.2016.10.003}.
+
+\leavevmode\hypertarget{ref-Simon1990}{}%
+Simon, Herbert A. 1990. ``Bounded Rationality.'' In \emph{Utility and Probability}, 15--18. London: Palgrave Macmillan UK. \url{https://doi.org/10.1007/978-1-349-20568-4_5}.
+
+\leavevmode\hypertarget{ref-Tucker2007}{}%
+Tucker, Bram. 2007. ``Perception of Interannual Covariation and Strategies for Risk Reduction among Mikea of Madagascar: Individual and Social Learning.'' \emph{Human Nature} 18 (2): 162--80. \url{https://doi.org/10.1007/s12110-007-9007-z}.
 
 \leavevmode\hypertarget{ref-Tucker2013}{}%
-Tucker, Bram, Jaovola Tombo, Tsiazonera, Patricia Hajasoa, Charlotte
-Nagnisaha, Vorisoa Rene Lahitoka, and Christian Zahatsy. 2013. ``Beyond
-Mean and Variance: Economic Risk Versus Perceived Risk of Farming,
-Foraging, and Fishing Activities in Southwestern Madagascar.''
-\emph{Human Ecology} 41 (3). Springer US: 393--407.
-\url{https://doi.org/10.1007/s10745-013-9563-2}.
+Tucker, Bram, Jaovola Tombo, Tsiazonera, Patricia Hajasoa, Charlotte Nagnisaha, Vorisoa Rene Lahitoka, and Christian Zahatsy. 2013. ``Beyond Mean and Variance: Economic Risk Versus Perceived Risk of Farming, Foraging, and Fishing Activities in Southwestern Madagascar.'' \emph{Human Ecology} 41 (3): 393--407. \url{https://doi.org/10.1007/s10745-013-9563-2}.
 
-\bibliographystyle{spbasic}
+\leavevmode\hypertarget{ref-Upton1987}{}%
+Upton, Martin. 1987. \emph{African farm management}. CUP Archive.
+
+\leavevmode\hypertarget{ref-Weiss2011}{}%
+Weiss, Ehud, and Daniel Zohary. 2011. ``The Neolithic Southwest Asian founder crops their biology and archaeobotany.'' \emph{Current Anthropology} 52 (SUPPL. 4). \url{https://doi.org/10.1086/658367}.
+
+\leavevmode\hypertarget{ref-Wilkinson1997}{}%
+Wilkinson, Tony J. 1997. ``Environmental Fluctuations, Agricultural Production and Collapse: A View from Bronze Age Upper Mesopotamia.'' In \emph{Third Millenium Bc Climate Change and Old World Collapse}, edited by Hasan Nüzhet Dalfes, G. Kukla, and Harvey Weiss, 66--106. Springer. \url{http://books.google.com/books?id=LHIRAQAAIAAJ}.
+
+\bibliographystyle{Formato\_bibliografia\_Springer}
 \bibliography{bibliography.bib}
 
 \end{document}
